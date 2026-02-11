@@ -56,7 +56,7 @@ import torch
 import torchaudio
 from transformers import AutoModel, AutoProcessor
 
-pretrained_model_name_or_path = "OpenMOSS-Team/MOSS-TTSD"
+pretrained_model_name_or_path = "OpenMOSS-Team/MOSS-TTSD-v1.0"
 audio_tokenizer_name_or_path = "OpenMOSS-Team/MOSS-Audio-Tokenizer"
 device = "cuda" if torch.cuda.is_available() else "cpu"
 dtype = torch.bfloat16 if device == "cuda" else torch.float32
@@ -142,9 +142,10 @@ with torch.no_grad():
         )
 
         for message in processor.decode(outputs):
-            for seg_idx, audio in enumerate(message.audio_codes_list):
-                torchaudio.save(save_dir / f"{sample_idx}_{seg_idx}.wav", audio.unsqueeze(0), processor.model_config.sampling_rate)
+            audio = message.audio_codes_list[0]
+            out_path = save_dir / f"sample{sample_idx}.wav"
             sample_idx += 1
+            torchaudio.save(out_path, audio.unsqueeze(0), processor.model_config.sampling_rate)
 
 ```
 
