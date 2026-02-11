@@ -51,6 +51,7 @@ MOSS-TTSD uses a **continuation** workflow: provide reference audio for each spe
 
 ```python
 from pathlib import Path
+import importlib.util
 import torch
 import torchaudio
 from transformers import AutoModel, AutoProcessor
@@ -65,6 +66,28 @@ pretrained_model_name_or_path = "OpenMOSS-Team/MOSS-TTSD-v1.0"
 device = "cuda" if torch.cuda.is_available() else "cpu"
 dtype = torch.bfloat16 if device == "cuda" else torch.float32
 
+def resolve_attn_implementation() -> str:
+    # Prefer FlashAttention 2 when package + device conditions are met.
+    if (
+        device == "cuda"
+        and importlib.util.find_spec("flash_attn") is not None
+        and dtype in {torch.float16, torch.bfloat16}
+    ):
+        major, _ = torch.cuda.get_device_capability()
+        if major >= 8:
+            return "flash_attention_2"
+
+    # CUDA fallback: use PyTorch SDPA kernels.
+    if device == "cuda":
+        return "sdpa"
+
+    # CPU fallback.
+    return "eager"
+
+
+attn_implementation = resolve_attn_implementation()
+print(f"[INFO] Using attn_implementation={attn_implementation}")
+
 processor = AutoProcessor.from_pretrained(
     pretrained_model_name_or_path,
     trust_remote_code=True,
@@ -75,7 +98,7 @@ model = AutoModel.from_pretrained(
     pretrained_model_name_or_path,
     trust_remote_code=True,
     # If FlashAttention 2 is installed, you can set attn_implementation="flash_attention_2"
-    attn_implementation="sdpa",
+    attn_implementation=attn_implementation,
     torch_dtype=dtype,
 ).to(device)
 model.eval()

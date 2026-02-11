@@ -46,7 +46,8 @@ pip install -r requirements.txt
 
 ### Basic Usage (Non streaming)
 
-```bash
+```python
+import importlib.util
 import torch
 import torchaudio
 from transformers import AutoTokenizer, AutoModel
@@ -55,12 +56,35 @@ from inferencer import MossTTSRealtimeInference
 
 CODEC_SAMPLE_RATE = 24000
 
-device = torch.device(f"cuda:0")
+device = "cuda" if torch.cuda.is_available() else "cpu"
+dtype = torch.bfloat16 if device == "cuda" else torch.float32
+
+def resolve_attn_implementation() -> str:
+    # Prefer FlashAttention 2 when package + device conditions are met.
+    if (
+        device == "cuda"
+        and importlib.util.find_spec("flash_attn") is not None
+        and dtype in {torch.float16, torch.bfloat16}
+    ):
+        major, _ = torch.cuda.get_device_capability()
+        if major >= 8:
+            return "flash_attention_2"
+
+    # CUDA fallback: use PyTorch SDPA kernels.
+    if device == "cuda":
+        return "sdpa"
+
+    # CPU fallback.
+    return "eager"
+
+
+attn_implementation = resolve_attn_implementation()
+print(f"[INFO] Using attn_implementation={attn_implementation}")
 
 # If FlashAttention 2 is installed, you can set attn_implementation="flash_attention_2"
-model = MossTTSRealtime.from_pretrained("OpenMOSS-Team/MOSS-TTS-Realtime", attn_implementation="sdpa", torch_dtype=torch.bfloat16).to(device)
+model = MossTTSRealtime.from_pretrained("OpenMOSS-Team/MOSS-TTS-Realtime", attn_implementation=attn_implementation, torch_dtype=torch.bfloat16).to(device)
 tokenizer = AutoTokenizer.from_pretrained("OpenMOSS-Team/MOSS-TTS-Realtime")
-codec = AutoModel.from_pretrained("/root/MOSS-TTS-Realtime/MOSS-Audio-Tokenizer", trust_remote_code=True).eval()
+codec = AutoModel.from_pretrained("OpenMOSS-Team/MOSS-Audio-Tokenizer", trust_remote_code=True).eval()
 codec = codec.to(device)
 
 inferencer = MossTTSRealtimeInference(model, tokenizer, max_length=5000, codec=codec, codec_sample_rate=CODEC_SAMPLE_RATE, codec_encode_kwargs={"chunk_duration": 8})
@@ -74,11 +98,11 @@ result = inferencer.generate(
     text=text,
     reference_audio_path=reference_audio_path,
     temperature=0.8,
-    top_p = 0.6,
-    top_k = 30,
-    repetition_penalty = 1.1,
-    repetition_window = 50,
-    device = device,
+    top_p=0.6,
+    top_k=30,
+    repetition_penalty=1.1,
+    repetition_window=50,
+    device=device,
 )
 
 for i, generated_tokens, in enumerate(result):
@@ -106,7 +130,7 @@ python3 example_llm_stream_to_tts.py \
 
 Key: provide a streaming text_deltas source that yields incremental text chunks (e.g., vLLM streaming output, or delta text from OpenAI ChatCompletions).
 
-```bash
+```python
 with codec.streaming(batch_size=1):
   for delta in text_deltas:
       print(delta, end="", flush=True)
