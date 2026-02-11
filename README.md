@@ -258,6 +258,8 @@ MOSS‑TTS achieved state‑of‑the‑art results on the open‑source zero‑s
 | VoxCPM | 0.5B | ✅ | 1.85 | 72.9 | **0.93** | 77.2 |
 | Qwen3‑TTS | 0.6B | ✅ | 1.68 | 70.39 | 1.23 | 76.4 |
 | Qwen3‑TTS | 1.7B | ✅ | **1.5** | 71.45 | 1.33 | 76.72 |
+| GLM-TTS | 1.5B | ✅ | 2.23 | 67.2 | 1.03 | 76.1 |
+| GLM-TTS-RL | 1.5B | ✅ | 1.91 | 68.1 | 0.89 | 76.4 |
 |  |  |  |  |  |  |  |
 | **MossTTSDelay** | **8B** | ✅ | 1.79 | 71.46 | 1.32 | 77.05 |
 | **MossTTSLocal** | **1.7B** | ✅ | 1.85 | **73.42** | 1.2 | **78.82** |
