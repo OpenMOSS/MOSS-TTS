@@ -147,18 +147,13 @@ MAX_JOBS=4 pip install --extra-index-url https://download.pytorch.org/whl/cu128 
 ### MOSS‑TTS 基础用法
 
 如果你更希望使用 Gradio 界面，我们为 4 个主模型提供了对应脚本：
-- MOSS-TTS：`clis/moss_tts_demo.py`
-- MOSS-TTSD：`clis/moss_ttsd_demo.py`
-- MOSS-VoiceGenerator：`clis/moss_voice_generator_demo.py`
-- MOSS-SoundEffect：`clis/moss_sound_effect_demo.py`
 
-请先按照上文环境准备完成安装，然后额外安装 Gradio：
-
-```bash
-pip install gradio
-```
-
-快速启动命令可参考 [clis/README.md](clis/README.md)。
+| Model | Script | Run |
+|---|---|---|
+| MOSS-TTS | [clis/moss_tts_demo.py](moss_tts_demo.py) | `python clis/moss_tts_demo.py` |
+| MOSS-TTSD | [clis/moss_ttsd_demo.py](moss_ttsd_demo.p) | `python clis/moss_ttsd_demo.py` |
+| MOSS-VoiceGenerator | [clis/moss_voice_generator_demo.py](moss_voice_generator_demo.py) | `python clis/moss_voice_generator_demo.py` |
+| MOSS-SoundEffect | [clis/moss_sound_effect_demo.py](moss_sound_effect_demo.py) | `python clis/moss_sound_effect_demo.py` |
 
 MOSS-TTS-Realtime 的 Gradio demo 请直接参考 [docs/moss_tts_realtime_model_card.md](docs/moss_tts_realtime_model_card.md)。
 
