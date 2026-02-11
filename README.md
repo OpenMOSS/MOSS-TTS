@@ -294,9 +294,6 @@ For open-source models, annotators are asked to score each sample pair in terms 
 For closed-source models, annotators are only asked to choose the overall preferred one in each pair, and we compute the win rate accordingly.
 ![alt text](assets/VS_Proprietary_Models.png)
 
-For closed-source models, annotators are only asked to choose the overall preferred one in each pair, and we compute the win rate accordingly.
-![alt text](assets/VS_Proprietary_Models.png)
-
 
 ### MOSS‑VoiceGenerator
 MOSS‑VoiceGenerator demonstrates strong subjective preference across **overall preference**, **instruction following**, and **naturalness**.
