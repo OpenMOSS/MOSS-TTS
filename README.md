@@ -215,7 +215,6 @@ conversations = [
 model = AutoModel.from_pretrained(
     pretrained_model_name_or_path,
     trust_remote_code=True,
-    # If FlashAttention 2 is installed, you can set attn_implementation="flash_attention_2"
     attn_implementation=attn_implementation,
     torch_dtype=dtype,
 ).to(device)

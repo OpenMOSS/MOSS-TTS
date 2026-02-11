@@ -1,3 +1,4 @@
+import importlib.util
 import torch
 import torchaudio
 import torch.nn.functional as F
@@ -11,11 +12,33 @@ MAX_CHANNELS = 16
 CODEC_SAMPLE_RATE = 24000
 
 def main(model_path, codec_path):
-    device = torch.device(f"cuda:0")
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+    dtype = torch.bfloat16 if device == "cuda" else torch.float32
+
+    def resolve_attn_implementation() -> str:
+        # Prefer FlashAttention 2 when package + device conditions are met.
+        if (
+            device == "cuda"
+            and importlib.util.find_spec("flash_attn") is not None
+            and dtype in {torch.float16, torch.bfloat16}
+        ):
+            major, _ = torch.cuda.get_device_capability()
+            if major >= 8:
+                return "flash_attention_2"
+
+        # CUDA fallback: use PyTorch SDPA kernels.
+        if device == "cuda":
+            return "sdpa"
+
+        # CPU fallback.
+        return "eager"
+
+
+    attn_implementation = resolve_attn_implementation()
+    print(f"[INFO] Using attn_implementation={attn_implementation}")
     
     # Because the local transformer module uses StaticCache, which causes errors when using the FlashAttention implementation. If FlashAttention is required, replace StaticCache with DynamicCache.
-    # If FlashAttention 2 is installed, you can set attn_implementation="flash_attention_2"
-    model = MossTTSRealtime.from_pretrained(model_path, attn_implementation="sdpa", torch_dtype=torch.bfloat16).to(device)
+    model = MossTTSRealtime.from_pretrained(model_path, attn_implementation=attn_implementation, torch_dtype=torch.bfloat16).to(device)
     tokenizer = AutoTokenizer.from_pretrained(model_path)
     codec = AutoModel.from_pretrained(codec_path, trust_remote_code=True).eval()
     codec = codec.to(device)

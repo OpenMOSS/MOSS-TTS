@@ -81,7 +81,6 @@ def resolve_attn_implementation() -> str:
 attn_implementation = resolve_attn_implementation()
 print(f"[INFO] Using attn_implementation={attn_implementation}")
 
-# If FlashAttention 2 is installed, you can set attn_implementation="flash_attention_2"
 model = MossTTSRealtime.from_pretrained("OpenMOSS-Team/MOSS-TTS-Realtime", attn_implementation=attn_implementation, torch_dtype=torch.bfloat16).to(device)
 tokenizer = AutoTokenizer.from_pretrained("OpenMOSS-Team/MOSS-TTS-Realtime")
 codec = AutoModel.from_pretrained("OpenMOSS-Team/MOSS-Audio-Tokenizer", trust_remote_code=True).eval()
