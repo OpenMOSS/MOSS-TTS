@@ -101,7 +101,7 @@ We train **MossTTSDelay** and **MossTTSLocal** as complementary baselines under 
 
 ## Supported Languages
 
-MOSS-TTS and MOSS-TTSD currently supports **20 languages** with varying quality depending on dataset coverage:
+MOSS-TTS ,MOSS-TTSD and MOSS-TTS-Realtime currently supports **20 languages**:
 
 | Language | Code | Flag | Language | Code | Flag | Language | Code | Flag |
 |---|---|---|---|---|---|---|---|---|
@@ -165,7 +165,7 @@ If you prefer Gradio demos, we provide 4 scripts for the main models:
 | MOSS-VoiceGenerator | [clis/moss_voice_generator_app.py](clis/moss_voice_generator_app.py) |
 | MOSS-SoundEffect | [clis/moss_sound_effect_app.py](clis/moss_sound_effect_app.py) | 
 
-For the MOSS-TTS-Realtime Gradio demo, please refer to [docs/moss_tts_realtime_model_card.md](docs/moss_tts_realtime_model_card.md).
+For the MOSS-TTS-Realtime Gradio demo, please refer to [MOSS-TTS-Realtime Model Card](docs/moss_tts_realtime_model_card.md)
 
 ```python
 from pathlib import Path

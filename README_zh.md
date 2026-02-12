@@ -106,7 +106,7 @@ MOSS‑TTS 家族是由 [MOSI.AI](https://mosi.cn/#hero) 与 [OpenMOSS 团队](h
 
 ## 支持的语言
 
-MOSS-TTS 和 MOSS-TTSD 目前支持 **20 种语言**，但质量因数据集覆盖范围而异：
+MOSS-TT、MOSS-TTSD 和 MOSS-TTS-Realtime 目前支持 **20 种语言**：
 
 | Language | Code | Flag | Language | Code | Flag | Language | Code | Flag |
 |---|---|---|---|---|---|---|---|---|
@@ -173,7 +173,7 @@ MAX_JOBS=4 pip install --extra-index-url https://download.pytorch.org/whl/cu128 
 | MOSS-VoiceGenerator | [clis/moss_voice_generator_app.py](clis/moss_voice_generator_app.py) | 
 | MOSS-SoundEffect | [clis/moss_sound_effect_app.py](clis/moss_sound_effect_app.py) |
 
-MOSS-TTS-Realtime 的 Gradio demo 请直接参考 [docs/moss_tts_realtime_model_card.md](docs/moss_tts_realtime_model_card.md)。
+MOSS-TTS-Realtime 的 Gradio demo 请直接参考 [MOSS-TTS-Realtime Model Card](docs/moss_tts_realtime_model_card.md)
 
 ```python
 from pathlib import Path
