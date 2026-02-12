@@ -144,7 +144,7 @@ If you prefer Gradio demos, we provide 4 scripts for the main models:
 | Model | Script | Run |
 |---|---|---|
 | MOSS-TTS | [clis/moss_tts_demo.py](moss_tts_demo.py) | `python clis/moss_tts_demo.py` |
-| MOSS-TTSD | [clis/moss_ttsd_demo.py](moss_ttsd_demo.p) | `python clis/moss_ttsd_demo.py` |
+| MOSS-TTSD | [clis/moss_ttsd_demo.py](moss_ttsd_demo.py) | `python clis/moss_ttsd_demo.py` |
 | MOSS-VoiceGenerator | [clis/moss_voice_generator_demo.py](moss_voice_generator_demo.py) | `python clis/moss_voice_generator_demo.py` |
 | MOSS-SoundEffect | [clis/moss_sound_effect_demo.py](moss_sound_effect_demo.py) | `python clis/moss_sound_effect_demo.py` |
 
