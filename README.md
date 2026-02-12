@@ -101,7 +101,7 @@ We train **MossTTSDelay** and **MossTTSLocal** as complementary baselines under 
 
 ## Supported Languages
 
-MOSS-TTS ,MOSS-TTSD and MOSS-TTS-Realtime currently supports **20 languages**:
+MOSS-TTS, MOSS-TTSD and MOSS-TTS-Realtime currently supports **20 languages**:
 
 | Language | Code | Flag | Language | Code | Flag | Language | Code | Flag |
 |---|---|---|---|---|---|---|---|---|
