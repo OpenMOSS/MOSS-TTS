@@ -331,7 +331,7 @@ def build_demo(args: argparse.Namespace):
         gr.Markdown(
             """
             <div class="app-card">
-              <div class="app-title">MossTTS</div>
+              <div class="app-title">MOSS-TTS</div>
               <div class="app-subtitle">Minimal UI: Direct Generation, Clone, Continuation, Continuation + Clone</div>
             </div>
             """
