@@ -188,10 +188,10 @@ def build_demo(args: argparse.Namespace):
     #output_audio {
       padding-bottom: 12px;
       margin-bottom: 8px;
-      overflow: visible !important;
+      overflow: hidden !important;
     }
     #output_audio > .wrap {
-      overflow: visible !important;
+      overflow: hidden !important;
     }
     #output_audio audio {
       margin-bottom: 6px;

@@ -313,10 +313,10 @@ def build_demo(args: argparse.Namespace):
     #output_audio {
       padding-bottom: 12px;
       margin-bottom: 8px;
-      overflow: visible !important;
+      overflow: hidden !important;
     }
     #output_audio > .wrap {
-      overflow: visible !important;
+      overflow: hidden !important;
     }
     #output_audio audio {
       margin-bottom: 6px;
@@ -327,7 +327,7 @@ def build_demo(args: argparse.Namespace):
     }
     """
 
-    with gr.Blocks(title="MossTTS Demo", css=custom_css) as demo:
+    with gr.Blocks(title="MOSS-TTS Demo", css=custom_css) as demo:
         gr.Markdown(
             """
             <div class="app-card">
@@ -388,7 +388,7 @@ def build_demo(args: argparse.Namespace):
                         minimum=1,
                         maximum=200,
                         step=1,
-                        value=50,
+                        value=25,
                         label="top_k",
                     )
                     repetition_penalty = gr.Slider(

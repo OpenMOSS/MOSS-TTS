@@ -266,18 +266,18 @@ def build_demo(args: argparse.Namespace):
       margin-bottom: 8px;
     }
     #output_panel {
-      overflow: visible !important;
+      overflow: hidden !important;
     }
     #output_audio {
       padding-bottom: 24px;
       margin-bottom: 0;
-      overflow: visible !important;
+      overflow: hidden !important;
     }
     #output_audio > .wrap,
     #output_audio .wrap,
     #output_audio .audio-container,
     #output_audio .block {
-      overflow: visible !important;
+      overflow: hidden !important;
     }
     #output_audio .audio-container {
       padding-bottom: 10px;
