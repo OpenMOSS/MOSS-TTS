@@ -248,6 +248,7 @@ text_1 = "亲爱的你，\n你好呀。\n\n今天，我想用最认真、最温�
 text_2 = "We stand on the threshold of the AI era.\nArtificial intelligence is no longer just a concept in laboratories, but is entering every industry, every creative endeavor, and every decision. It has learned to see, hear, speak, and think, and is beginning to become an extension of human capabilities. AI is not about replacing humans, but about amplifying human creativity, making knowledge more equitable, more efficient, and allowing imagination to reach further. A new era, jointly shaped by humans and intelligent systems, has arrived."
 ref_text_1 = "太阳系八大行星之一。"
 ref_text_2 = "But I really can't complain about not having a normal college experience to you."
+# Use audio from ./assets/audio to avoid downloading from the cloud.
 ref_audio_1 = "https://speech-demo.oss-cn-shanghai.aliyuncs.com/moss_tts_demo/tts_readme_demo/reference_zh.wav"
 ref_audio_2 = "https://speech-demo.oss-cn-shanghai.aliyuncs.com/moss_tts_demo/tts_readme_demo/reference_en.m4a"
 

@@ -1,8 +1,10 @@
 import argparse
 import functools
 import importlib.util
+from pathlib import Path
 import re
 import time
+import orjson
 
 import gradio as gr
 import numpy as np
@@ -28,6 +30,51 @@ MODE_CONTINUE = "Continuation"
 MODE_CONTINUE_CLONE = "Continuation + Clone"
 ZH_TOKENS_PER_CHAR = 3.098411951313033
 EN_TOKENS_PER_CHAR = 0.8673376262755219
+REFERENCE_AUDIO_DIR = Path(__file__).resolve().parent.parent / "assets" / "audio"
+EXAMPLE_TEXTS_JSONL_PATH = Path(__file__).resolve().parent.parent / "assets" / "text" / "moss_tts_example_texts.jsonl"
+
+
+def _parse_example_id(example_id: str) -> tuple[str, int] | None:
+    matched = re.fullmatch(r"(zh|en)/(\d+)", (example_id or "").strip())
+    if matched is None:
+        return None
+    return matched.group(1), int(matched.group(2))
+
+
+def _resolve_reference_audio_path(language: str, index: int) -> Path | None:
+    stem_candidates = [f"reference_{language}_{index}"]
+    for stem in stem_candidates:
+        for ext in (".wav", ".mp3"):
+            audio_path = REFERENCE_AUDIO_DIR / f"{stem}{ext}"
+            if audio_path.exists():
+                return audio_path
+    return None
+
+
+def build_example_rows() -> list[tuple[str, str, str]]:
+    rows: list[tuple[str, str, str]] = []
+
+    with open(EXAMPLE_TEXTS_JSONL_PATH, "rb") as f:
+        for line in f:
+            if not line.strip():
+                continue
+            sample = orjson.loads(line)
+            parsed = _parse_example_id(sample.get("id", ""))
+            if parsed is None:
+                continue
+
+            language, index = parsed
+            text = str(sample.get("text", "")).strip()
+            audio_path = _resolve_reference_audio_path(language, index)
+            if audio_path is None:
+                continue
+
+            rows.append((sample['role'], str(audio_path), text))
+
+    return rows
+
+
+EXAMPLE_ROWS = build_example_rows()
 
 
 @functools.lru_cache(maxsize=1)
@@ -206,6 +253,40 @@ def render_mode_hint(reference_audio: str | None, mode_with_reference: str):
     if mode_with_reference == MODE_CLONE:
         return "Current mode: **Clone** (speaker timbre will be cloned from the reference audio)"
     return f"Current mode: **{mode_with_reference}**  \n> {CONTINUATION_NOTICE}"
+
+
+def apply_example_selection(
+    mode_with_reference: str,
+    duration_control_enabled: bool,
+    duration_tokens: int,
+    evt: gr.SelectData,
+):
+    if evt is None or evt.index is None:
+        return gr.update(), gr.update(), gr.update(), gr.update(), gr.update(), gr.update()
+
+    if isinstance(evt.index, (tuple, list)):
+        row_idx = int(evt.index[0])
+    else:
+        row_idx = int(evt.index)
+
+    if row_idx < 0 or row_idx >= len(EXAMPLE_ROWS):
+        return gr.update(), gr.update(), gr.update(), gr.update(), gr.update(), gr.update()
+
+    _, audio_path, example_text = EXAMPLE_ROWS[row_idx]
+    duration_slider_update, duration_hint, duration_checkbox_update = update_duration_controls(
+        duration_control_enabled,
+        example_text,
+        duration_tokens,
+        mode_with_reference,
+    )
+    return (
+        audio_path,
+        example_text,
+        render_mode_hint(audio_path, mode_with_reference),
+        duration_slider_update,
+        duration_hint,
+        duration_checkbox_update,
+    )
 
 
 def run_inference(
@@ -411,6 +492,16 @@ def build_demo(args: argparse.Namespace):
             with gr.Column(scale=2):
                 output_audio = gr.Audio(label="Output Audio", type="numpy", elem_id="output_audio")
                 status = gr.Textbox(label="Status", lines=4, interactive=False)
+                examples_table = gr.Dataframe(
+                    headers=["Reference Speech", "Example Text"],
+                    value=[[name, text] for name, _, text in EXAMPLE_ROWS],
+                    datatype=["str", "str"],
+                    row_count=(len(EXAMPLE_ROWS), "fixed"),
+                    col_count=(2, "fixed"),
+                    interactive=False,
+                    wrap=True,
+                    label="Examples (click a row to fill inputs)",
+                )
 
         reference_audio.change(
             fn=render_mode_hint,
@@ -436,6 +527,18 @@ def build_demo(args: argparse.Namespace):
             fn=update_duration_controls,
             inputs=[duration_control_enabled, text, duration_tokens, mode_with_reference],
             outputs=[duration_tokens, duration_hint, duration_control_enabled],
+        )
+        examples_table.select(
+            fn=apply_example_selection,
+            inputs=[mode_with_reference, duration_control_enabled, duration_tokens],
+            outputs=[
+                reference_audio,
+                text,
+                mode_hint,
+                duration_tokens,
+                duration_hint,
+                duration_control_enabled,
+            ],
         )
 
         run_btn.click(
