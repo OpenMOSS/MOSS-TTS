@@ -104,6 +104,7 @@ model.eval()
 
 # --- Inputs ---
 
+# Use audio from ./assets/audio to avoid downloading from the cloud.
 prompt_audio_speaker1 = "https://speech-demo.oss-cn-shanghai.aliyuncs.com/moss_tts_demo/tts_readme_demo/reference_02_s1.wav"
 prompt_audio_speaker2 = "https://speech-demo.oss-cn-shanghai.aliyuncs.com/moss_tts_demo/tts_readme_demo/reference_02_s2.wav"
 prompt_text_speaker1 = "[S1] In short, we embarked on a mission to make America great again for all Americans."
