@@ -27,11 +27,11 @@ import torch._dynamo
 torch._dynamo.config.cache_size_limit = 64
 
 SAMPLE_RATE = 24000
-CODEC_MODEL_PATH = "/root/MOSS-TTS-Realtime/MOSS-Audio-Tokenizer"
+CODEC_MODEL_PATH = "OpenMOSS-Team/MOSS-Audio-Tokenizer"
 MODEL_PATH = (
-    "/root/ckpts/models/mossttsrealtime"
+    "/OpenMOSS-Team/MOSS-TTS-Realtime"
 )
-TOKENIZER_PATH = "/root/ckpts/models/mossttsrealtime"
+TOKENIZER_PATH = "OpenMOSS-Team/MOSS-TTS-Realtime"
 PROMPT_WAV = "./audio/prompt_audio1.mp3"
 USER_WAV = "./audio/user1.wav"
 
