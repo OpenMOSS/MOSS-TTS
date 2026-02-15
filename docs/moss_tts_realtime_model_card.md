@@ -35,13 +35,19 @@ By tightly integrating multi-turn context modeling with low-latency streaming sy
 ## 2. Quickstart
 
 ### Environment Setup
+Environment setup is the same as on the MOSS-TTS main page.
+```bash
+conda create -n moss-tts python=3.12 -y
+conda activate moss-tts
+```
 
-We recommend a clean Python environment with **Transformers 5.0.0**.
+Install all required dependencies:
 
 ```bash
-conda create -n moss-tts python=3.10 -y
-conda activate moss-tts
-pip install -r requirements.txt
+git clone https://github.com/OpenMOSS/MOSS-TTS.git
+cd MOSS-TTS
+pip install --extra-index-url https://download.pytorch.org/whl/cu128 -e .
+cd moss_tts_realtime
 ```
 
 ### Basic Usage (Non streaming)
