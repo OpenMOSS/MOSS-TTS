@@ -108,10 +108,10 @@ MOSS-TTS, MOSS-TTSD and MOSS-TTS-Realtime currently supports **20 languages**:
 |---|---|---|---|---|---|---|---|---|
 | Chinese | zh | 🇨🇳 | English | en | 🇺🇸 | German | de | 🇩🇪 |
 | Spanish | es | 🇪🇸 | French | fr | 🇫🇷 | Japanese | ja | 🇯🇵 |
-| Italian | it | 🇮🇹 | Hebrew | he | 🇮🇱 | Korean | ko | 🇰🇷 |
+| Italian | it | 🇮🇹 | Hungarian | hu | 🇭🇺 | Korean | ko | 🇰🇷 |
 | Russian | ru | 🇷🇺 | Persian (Farsi) | fa | 🇮🇷 | Arabic | ar | 🇸🇦 |
 | Polish | pl | 🇵🇱 | Portuguese | pt | 🇵🇹 | Czech | cs | 🇨🇿 |
-| Danish | da | 🇩🇰 | Swedish | sv | 🇸🇪 | Hungarian | hu | 🇭🇺 |
+| Danish | da | 🇩🇰 | Swedish | sv | 🇸🇪 | | | |
 | Greek | el | 🇬🇷 | Turkish | tr | 🇹🇷 |  |  |  |
 
 
