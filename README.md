@@ -318,7 +318,7 @@ MOSS‑TTS achieved state‑of‑the‑art results on the open‑source zero‑s
 ### MOSS‑TTSD
 
 #### Objective Evaluation
-We evaluate MOSS‑TTSD-v1.0 using three objective metrics: Speaker Switch Accuracy (ACC), Speaker Similarity (SIM), and Word Error Rate (WER). Benchmarked against multiple open-source and closed-source models, the results show that MOSS‑TTSD-v1.0 consistently achieves either the best or second-best performance.
+We evaluate MOSS‑TTSD-v1.0 using three objective metrics: Speaker Attribution Accuracy (ACC), Speaker Similarity (SIM), and Word Error Rate (WER). Benchmarked against multiple open-source and closed-source models, the results show that MOSS‑TTSD-v1.0 consistently achieves either the best or second-best performance.
 
 | Model | ZH - SIM | ZH - ACC | ZH - WER | EN - SIM | EN - ACC | EN - WER |
 | :--- | :---: | :---: | :---: | :---: | :---: | :---: |

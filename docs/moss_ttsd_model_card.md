@@ -217,7 +217,9 @@ We introduce a robust evaluation framework leveraging **MMS-FA** for alignment a
   - **Speaker Similarity (SIM)**
   - **Word Error Rate (WER)** computed using **Whisper-large-v3**.
 
-- **Dataset**: 100 multi-turn dialogues (CN/EN) spanning 30s–720s. Covers diverse scenarios including Podcasts, TV dubbing, and Crosstalk. Code and data coming soon.  
+- **Dataset**: 100 multi-turn dialogues (CN/EN) spanning 30s–720s. Covers diverse scenarios including Podcasts, TV dubbing, and Crosstalk. 
+
+Please refer to [TTSD-eval](https://github.com/OpenMOSS/TTSD-eval) for the code and data.
 <br>
 
 | Model | ZH - SIM | ZH - ACC | ZH - WER | EN - SIM | EN - ACC | EN - WER |
