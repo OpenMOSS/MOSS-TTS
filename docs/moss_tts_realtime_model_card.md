@@ -36,6 +36,8 @@ By tightly integrating multi-turn context modeling with low-latency streaming sy
 
 ### Environment Setup
 Environment setup is the same as on the MOSS-TTS main page.
+
+#### Using Conda
 ```bash
 conda create -n moss-tts python=3.12 -y
 conda activate moss-tts
@@ -47,6 +49,17 @@ Install all required dependencies:
 git clone https://github.com/OpenMOSS/MOSS-TTS.git
 cd MOSS-TTS
 pip install --extra-index-url https://download.pytorch.org/whl/cu128 -e .
+cd moss_tts_realtime
+```
+
+#### Using `uv`
+```bash
+# Install uv first: https://docs.astral.sh/uv/getting-started/installation/
+git clone https://github.com/OpenMOSS/MOSS-TTS.git
+cd MOSS-TTS
+uv venv --python 3.12 .venv
+source .venv/bin/activate
+uv pip install --torch-backend cu128 -e .
 cd moss_tts_realtime
 ```
 

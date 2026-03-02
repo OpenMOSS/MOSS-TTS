@@ -23,7 +23,7 @@ import numpy as np
 import torch
 import torch.nn.functional as F
 
-from transformers.cache_utils import StaticCache
+from transformers.cache_utils import DynamicCache, StaticCache
 from transformers.utils import is_torchaudio_available, requires_backends
 from transformers.utils.import_utils import requires
 
@@ -66,6 +66,24 @@ class MossTTSRealtimeInference:
         self._is_stopping = None
         self._last_audio_tokens = None
         self._step_idx = 0
+        attn_impl = ""
+        for cfg in (
+            getattr(getattr(self.model, "local_transformer", None), "config", None),
+            getattr(getattr(self.model, "config", None), "local_config", None),
+            getattr(self.model, "config", None),
+        ):
+            if cfg is None:
+                continue
+            for name in ("_attn_implementation", "attn_implementation"):
+                candidate = getattr(cfg, name, None)
+                if isinstance(candidate, str) and candidate.strip():
+                    attn_impl = candidate.strip().lower()
+                    break
+            if attn_impl:
+                break
+        self._use_dynamic_local_cache = attn_impl == "flash_attention_2"
+        self._should_compile_local_transformer = not self._use_dynamic_local_cache
+        self._compiled_local_transformer = None
 
     @property
     def device(self):
@@ -74,6 +92,18 @@ class MossTTSRealtimeInference:
     @property
     def is_finished(self) -> bool:
         return self._is_stopping is not None and bool(self._is_stopping.all())
+
+    def _build_local_past_key_values(self):
+        if self._use_dynamic_local_cache:
+            return DynamicCache()
+        return StaticCache(config=self.model.local_transformer.config, max_cache_len=self.channels)
+
+    def _get_local_transformer_runner(self):
+        if not self._should_compile_local_transformer:
+            return self._generate_local_transformer_impl
+        if self._compiled_local_transformer is None:
+            self._compiled_local_transformer = torch.compile(self._generate_local_transformer_impl, fullgraph=True)
+        return self._compiled_local_transformer
 
     def reset_generation_state(self, keep_cache: bool = True):
         if not keep_cache:
@@ -298,8 +328,32 @@ class MossTTSRealtimeInference:
             steps_left -= 1
         return outputs
 
-    @torch.compile(fullgraph=True)
     def generate_local_transformer(
+        self,
+        hidden_states: torch.Tensor,
+        temperature: float,
+        top_p: float,
+        top_k: int,
+        do_sample: bool,
+        repetition_penalty: Optional[float],
+        repetition_window: Optional[int],
+        generated_tokens: Optional[torch.Tensor],
+        gen_step: int,
+    ) -> torch.Tensor:
+        runner = self._get_local_transformer_runner()
+        return runner(
+            hidden_states=hidden_states,
+            temperature=temperature,
+            top_p=top_p,
+            top_k=top_k,
+            do_sample=do_sample,
+            repetition_penalty=repetition_penalty,
+            repetition_window=repetition_window,
+            generated_tokens=generated_tokens,
+            gen_step=gen_step,
+        )
+
+    def _generate_local_transformer_impl(
         self,
         hidden_states: torch.Tensor,
         temperature: float,
@@ -316,7 +370,7 @@ class MossTTSRealtimeInference:
         local_inputs = hidden_states.reshape(-1, 1, self.model.config.local_config.hidden_size)
         output_token = torch.empty(batch_size, self.channels, dtype=torch.long, device=device)
 
-        past_key_values = StaticCache(config=self.model.local_transformer.config, max_cache_len=self.channels)
+        past_key_values = self._build_local_past_key_values()
         local_token = None
 
         cache_pos_t = torch.zeros(1, dtype=torch.long, device=device)

@@ -121,6 +121,8 @@ MOSS-TTS, MOSS-TTSD and MOSS-TTS-Realtime currently supports **20 languages**:
 
 We recommend a clean, isolated Python environment with **Transformers 5.0.0** to avoid dependency conflicts.
 
+#### Using Conda
+
 ```bash
 conda create -n moss-tts python=3.12 -y
 conda activate moss-tts
@@ -134,9 +136,22 @@ cd MOSS-TTS
 pip install --extra-index-url https://download.pytorch.org/whl/cu128 -e .
 ```
 
+#### Using `uv`
+
+```bash
+# Install uv first: https://docs.astral.sh/uv/getting-started/installation/
+git clone https://github.com/OpenMOSS/MOSS-TTS.git
+cd MOSS-TTS
+uv venv --python 3.12 .venv
+source .venv/bin/activate
+uv pip install --torch-backend cu128 -e .
+```
+
 #### (Optional) Install FlashAttention 2
 
 For better speed and lower GPU memory usage, you can install FlashAttention 2 if your hardware supports it.
+
+If you use Conda/pip:
 
 ```bash
 pip install --extra-index-url https://download.pytorch.org/whl/cu128 -e ".[flash-attn]"
@@ -148,8 +163,22 @@ If your machine has limited RAM and many CPU cores, you can cap build parallelis
 MAX_JOBS=4 pip install --extra-index-url https://download.pytorch.org/whl/cu128 -e ".[flash-attn]"
 ```
 
+If you use `uv`:
+
+```bash
+uv pip install --torch-backend cu128 -e ".[flash-attn]"
+```
+
+If your machine has limited RAM and many CPU cores, you can cap build parallelism:
+
+```bash
+MAX_JOBS=4 uv pip install --torch-backend cu128 -e ".[flash-attn]"
+```
+
 Notes:
 - Dependencies are managed in `pyproject.toml`, which currently pins `torch==2.9.1+cu128` and `torchaudio==2.9.1+cu128`.
+- In `uv`, `--torch-backend cu128` lets uv fetch compatible PyTorch CUDA wheels and resolve the rest from PyPI with the default safe index strategy.
+- If you need another backend, replace `cu128` with your target (for example, `cpu`, `cu126`).
 - If FlashAttention 2 fails to build on your machine, you can skip it and use the default attention backend.
 - FlashAttention 2 is only available on supported GPUs and is typically used with `torch.float16` or `torch.bfloat16`.
 

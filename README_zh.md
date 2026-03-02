@@ -129,6 +129,8 @@ MOSS-TT、MOSS-TTSD 和 MOSS-TTS-Realtime 目前支持 **20 种语言**：
 
 建议使用干净的 Python 环境。
 
+#### 使用 Conda
+
 ```bash
 conda create -n moss-tts python=3.12 -y
 conda activate moss-tts
@@ -141,10 +143,23 @@ git clone https://github.com/OpenMOSS/MOSS-TTS.git
 cd MOSS-TTS
 pip install --extra-index-url https://download.pytorch.org/whl/cu128 -e .
 ```
+
+#### 使用 `uv`
+
+```bash
+# 请先安装 uv：https://docs.astral.sh/uv/getting-started/installation/
+git clone https://github.com/OpenMOSS/MOSS-TTS.git
+cd MOSS-TTS
+uv venv --python 3.12 .venv
+source .venv/bin/activate
+uv pip install --torch-backend cu128 -e .
+```
 <a id="optional-install-flashattention-2"></a>
 #### （可选）安装 FlashAttention 2
 
 如果你的硬件支持，可以安装 FlashAttention 2 以提升速度并降低显存占用。
+
+如果你使用 Conda/pip：
 
 ```bash
 pip install --extra-index-url https://download.pytorch.org/whl/cu128 -e ".[flash-attn]"
@@ -156,8 +171,22 @@ pip install --extra-index-url https://download.pytorch.org/whl/cu128 -e ".[flash
 MAX_JOBS=4 pip install --extra-index-url https://download.pytorch.org/whl/cu128 -e ".[flash-attn]"
 ```
 
+如果你使用 `uv`：
+
+```bash
+uv pip install --torch-backend cu128 -e ".[flash-attn]"
+```
+
+如果机器内存较小、CPU 核数较多，可以限制并行编译数：
+
+```bash
+MAX_JOBS=4 uv pip install --torch-backend cu128 -e ".[flash-attn]"
+```
+
 说明：
 - 依赖统一在 `pyproject.toml` 中管理，当前固定了 `torch==2.9.1+cu128` 和 `torchaudio==2.9.1+cu128`。
+- `uv` 方案中使用 `--torch-backend cu128`，由 uv 处理 PyTorch CUDA 轮子来源，同时其余依赖仍使用默认安全索引策略解析。
+- 如果需要其他后端，可将 `cu128` 替换为目标后端（例如 `cpu`、`cu126`）。
 - 如果 FlashAttention 2 编译失败，可以跳过，直接使用默认 attention 后端。
 - FlashAttention 2 仅支持部分 GPU，通常搭配 `torch.float16` 或 `torch.bfloat16` 使用。
 

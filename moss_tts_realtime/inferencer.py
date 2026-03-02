@@ -5,7 +5,7 @@ from typing import Optional, List, Union, Any
 from transformers import AutoTokenizer
 import numpy as np
 from mossttsrealtime.modeling_mossttsrealtime import MossTTSRealtime
-from transformers.cache_utils import StaticCache
+from transformers.cache_utils import DynamicCache, StaticCache
 
 
 class MossTTSRealtimeProcessor():
@@ -84,10 +84,16 @@ class MossTTSRealtimeInference:
         self.codec = codec
         self.codec_sample_rate = int(codec_sample_rate)
         self.codec_encode_kwargs = codec_encode_kwargs or {"chunk_duration": 8}
+        self._use_dynamic_local_cache = self.model.config._attn_implementation == "flash_attention_2"
 
     @property
     def device(self) -> torch.device:
         return next(self.model.parameters()).device
+
+    def _build_local_past_key_values(self):
+        if self._use_dynamic_local_cache:
+            return DynamicCache()
+        return StaticCache(config=self.model.local_transformer.config, max_cache_len=self.channels)
 
     def _load_audio(self, audio_path: str, target_sample_rate: int) -> torch.Tensor:
         wav, sr = torchaudio.load(audio_path)
@@ -345,7 +351,6 @@ class MossTTSRealtimeInference:
             device=device,
         )
 
-
     def generate_local_transformer(
         self,
         hidden_states: torch.Tensor,
@@ -363,7 +368,7 @@ class MossTTSRealtimeInference:
         local_inputs = hidden_states.reshape(-1, 1, self.model.config.local_config.hidden_size)
         output_token = torch.empty(batch_size, self.channels, dtype=torch.long, device=device)
 
-        past_key_values = StaticCache(config=self.model.local_transformer.config, max_cache_len=self.channels)
+        past_key_values = self._build_local_past_key_values()
         local_token = None
 
         cache_pos_t = torch.zeros(1, dtype=torch.long, device=device)
@@ -403,7 +408,6 @@ class MossTTSRealtimeInference:
                 local_inputs = None
         return output_token
 
-
     def sample_token(self, logits, temperature, top_p=0.6, top_k=30, do_sample=True):
         if not do_sample or temperature == 0:
             return torch.argmax(logits, dim=-1)
@@ -423,7 +427,6 @@ class MossTTSRealtimeInference:
         
         output_shape = original_shape[:-1]
         return next_tokens_flat.view(output_shape)
-    
 
     def apply_repetition_penalty(
         self,
@@ -443,7 +446,7 @@ class MossTTSRealtimeInference:
         new = torch.where(cur < 0, cur * penalty, cur / penalty)
         scores_.scatter_(1, ht, new)
         return scores_
-    
+
     def apply_top_k(self, logits, top_k, filter_value=float('-inf'), min_tokens_to_keep: int = 1):
         if not isinstance(top_k, int) or top_k <= 0:
             raise ValueError(f"`top_k` has to be a strictly positive integer, but is {top_k}")
@@ -452,8 +455,7 @@ class MossTTSRealtimeInference:
         top_k = min(top_k, vocab_size)
         indices_to_remove = torch.topk(logits, top_k, dim=-1).values[..., -1, None]
         return logits.masked_fill(logits < indices_to_remove, filter_value)
-        
-        
+
     def apply_top_p(self, logits, top_p, filter_value=float('-inf'), min_tokens_to_keep: int = 1):
         top_p = float(top_p)
         if top_p < 0 or top_p > 1.0:
@@ -467,4 +469,3 @@ class MossTTSRealtimeInference:
         indices_to_remove = torch.zeros_like(logits, dtype=torch.bool).scatter(1, sorted_indices, sorted_indices_to_remove)
         logits_processed = logits.masked_fill(indices_to_remove, filter_value)
         return logits_processed
-    

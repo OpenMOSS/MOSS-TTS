@@ -11,6 +11,7 @@ from transformers import AutoModel
 MAX_CHANNELS = 16
 CODEC_SAMPLE_RATE = 24000
 
+
 def main(model_path, codec_path):
     device = "cuda" if torch.cuda.is_available() else "cpu"
     dtype = torch.bfloat16 if device == "cuda" else torch.float32
