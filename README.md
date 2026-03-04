@@ -12,6 +12,7 @@
 
 
 <div align="center">
+  <a href="https://clawhub.ai/luogao2333/moss-tts-voice"><img src="https://img.shields.io/badge/🦞_OpenClaw-Skills-8A2BE2" alt="OpenClaw"></a>
   <a href="https://huggingface.co/collections/OpenMOSS-Team/moss-tts"><img src="https://img.shields.io/badge/Huggingface-Models-orange?logo=huggingface&amp"></a>
   <a href="https://modelscope.cn/collections/OpenMOSS-Team/MOSS-TTS"><img src="https://img.shields.io/badge/ModelScope-Models-lightgrey?logo=modelscope&amp"></a>
   <a href="https://mosi.cn/#models"><img src="https://img.shields.io/badge/Blog-View-blue?logo=internet-explorer&amp"></a>
@@ -31,6 +32,7 @@
 MOSS‑TTS Family is an open‑source **speech and sound generation model family** from [MOSI.AI](https://mosi.cn/#hero) and the [OpenMOSS team](https://www.open-moss.com/). It is designed for **high‑fidelity**, **high‑expressiveness**, and **complex real‑world scenarios**, covering stable long‑form speech, multi‑speaker dialogue, voice/character design, environmental sound effects, and real‑time streaming TTS.
 
 ## News
+* 2026.3.4: 🎉 We add MOSS-TTS skills in [ClawHub](https://clawhub.ai) of 🦞 OpenClaw: [feishu-voice-tts](https://clawhub.ai/helloeveryworlds/feishu-voice-tts) and [moss-tts-voice](https://clawhub.ai/luogao2333/moss-tts-voice).
 * 2026.2.10: 🎉🎉🎉 We have released [MOSS-TTS Family](https://huggingface.co/collections/OpenMOSS-Team/moss-tts). Check our [Blog](https://mosi.cn/#models) for more details! Our **Huggingface Space** is here: [MOSS-TTS](https://huggingface.co/spaces/OpenMOSS-Team/MOSS-TTS), [MOSS-TTSD-v1.0](https://huggingface.co/spaces/OpenMOSS-Team/MOSS-TTSD-v1.0), [MOSS-VoiceGenerator](https://huggingface.co/spaces/OpenMOSS-Team/MOSS-VoiceGenerator).
 
 
@@ -47,6 +49,7 @@ MOSS‑TTS Family is an open‑source **speech and sound generation model family
 - [Released Models](#released-models)
 - [Supported Languages](#supported-languages)
 - [Quickstart](#quickstart)
+  - [OpenClaw API Skills](#openclaw-api-skills)
   - [Environment Setup](#environment-setup)
   - [(Optional) Install FlashAttention 2](#optional-install-flashattention-2)
   - [MOSS-TTS Basic Usage](#moss-tts-basic-usage)
@@ -116,6 +119,15 @@ MOSS-TTS, MOSS-TTSD and MOSS-TTS-Realtime currently supports **20 languages**:
 
 
 ## Quickstart
+
+### OpenClaw API Skills
+
+We add MOSS-TTS skills in [ClawHub](https://clawhub.ai) of 🦞 OpenClaw. You can get your API key from [MOSI AI Studio](https://studio.mosi.cn).
+
+| Skill | Description | Install |
+|---|---|---|
+| [`feishu-voice-tts`](https://clawhub.ai/helloeveryworlds/feishu-voice-tts) | Send voice messages in Feishu | `clawhub install feishu-voice-tts` |
+| [`moss-tts-voice`](https://clawhub.ai/luogao2333/moss-tts-voice) | Call MOSS-TTS API to generate speech | `clawhub install moss-tts-voice` |
 
 ### Environment Setup
 

@@ -12,6 +12,7 @@
 
 
 <div align="center">
+  <a href="https://clawhub.ai/luogao2333/moss-tts-voice"><img src="https://img.shields.io/badge/🦞_OpenClaw-Skills-8A2BE2" alt="OpenClaw"></a>
   <a href="https://huggingface.co/collections/OpenMOSS-Team/moss-tts"><img src="https://img.shields.io/badge/Huggingface-Models-orange?logo=huggingface&amp"></a>
   <a href="https://modelscope.cn/collections/OpenMOSS-Team/MOSS-TTS"><img src="https://img.shields.io/badge/ModelScope-Models-lightgrey?logo=modelscope&amp"></a>
   <a href="https://mosi.cn/#models"><img src="https://img.shields.io/badge/Blog-View-blue?logo=internet-explorer&amp"></a>
@@ -33,6 +34,7 @@ MOSS‑TTS 家族是由 [MOSI.AI](https://mosi.cn/#hero) 与 [OpenMOSS 团队](h
 
 <a id="news"></a>
 ## 新闻
+* 2026.3.4：🎉 我们在 🦞 龙虾 的 [ClawHub](https://clawhub.ai) 平台上架了 MOSS-TTS skills：[feishu-voice-tts](https://clawhub.ai/helloeveryworlds/feishu-voice-tts) 与 [moss-tts-voice](https://clawhub.ai/luogao2333/moss-tts-voice)。
 * 2026.2.10：🎉🎉🎉 我们已发布 [MOSS-TTS Family](https://huggingface.co/collections/OpenMOSS-Team/moss-tts)。更多详情请查看我们的 [Blog](https://mosi.cn/#models)！我们的 Huggingface Space 在这里：[MOSS-TTS](https://huggingface.co/spaces/OpenMOSS-Team/MOSS-TTS), [MOSS-TTSD-v1.0](https://huggingface.co/spaces/OpenMOSS-Team/MOSS-TTSD-v1.0), [MOSS-VoiceGenerator](https://huggingface.co/spaces/OpenMOSS-Team/MOSS-VoiceGenerator).
 
 ## 演示
@@ -49,6 +51,7 @@ MOSS‑TTS 家族是由 [MOSI.AI](https://mosi.cn/#hero) 与 [OpenMOSS 团队](h
 - [已发布模型](#released-models)
 - [支持的语言](#supported-languages)
 - [快速开始](#quickstart)
+  - [OpenClaw API Skills](#openclaw-api-skills)
   - [环境准备](#environment-setup)
   - [（可选）安装 FlashAttention 2](#optional-install-flashattention-2)
   - [基础用法](#moss-tts-basic-usage)
@@ -123,6 +126,15 @@ MOSS-TT、MOSS-TTSD 和 MOSS-TTS-Realtime 目前支持 **20 种语言**：
 
 <a id="quickstart"></a>
 ## 快速开始
+
+### OpenClaw API Skills
+
+我们在🦞 龙虾 的 [ClawHub](https://clawhub.ai) 平台上架了 MOSS-TTS skills。API Key 可在 [MOSI AI Studio](https://studio.mosi.cn) 获取。
+
+| Skill | 说明 | 安装命令 |
+|---|---|---|
+| [`feishu-voice-tts`](https://clawhub.ai/helloeveryworlds/feishu-voice-tts) | 在飞书发送语音消息 | `clawhub install feishu-voice-tts` |
+| [`moss-tts-voice`](https://clawhub.ai/luogao2333/moss-tts-voice) | 调用 MOSS-TTS API 生成语音 | `clawhub install moss-tts-voice` |
 
 <a id="environment-setup"></a>
 ### 环境准备
