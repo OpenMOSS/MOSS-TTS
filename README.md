@@ -32,6 +32,7 @@
 MOSS‑TTS Family is an open‑source **speech and sound generation model family** from [MOSI.AI](https://mosi.cn/#hero) and the [OpenMOSS team](https://www.open-moss.com/). It is designed for **high‑fidelity**, **high‑expressiveness**, and **complex real‑world scenarios**, covering stable long‑form speech, multi‑speaker dialogue, voice/character design, environmental sound effects, and real‑time streaming TTS.
 
 ## News
+* 2026.3.4: 🚀 Added **PyTorch-free inference support** — enabling lightweight on-device deployment via **llama.cpp + ONNX Runtime**. Quantized **GGUF weights** are released at [OpenMOSS-Team/MOSS-TTS-GGUF](https://huggingface.co/OpenMOSS-Team/MOSS-TTS-GGUF), and the **ONNX audio tokenizer** is available at [OpenMOSS-Team/MOSS-Audio-Tokenizer-ONNX](https://huggingface.co/OpenMOSS-Team/MOSS-Audio-Tokenizer-ONNX). See the **llama.cpp backend** for details.
 * 2026.3.4: 🎉 We add MOSS-TTS skills in [ClawHub](https://clawhub.ai) of 🦞 OpenClaw: [feishu-voice-tts](https://clawhub.ai/helloeveryworlds/feishu-voice-tts) and [moss-tts-voice](https://clawhub.ai/luogao2333/moss-tts-voice).
 * 2026.2.10: 🎉🎉🎉 We have released [MOSS-TTS Family](https://huggingface.co/collections/OpenMOSS-Team/moss-tts). Check our [Blog](https://mosi.cn/#models) for more details! Our **Huggingface Space** is here: [MOSS-TTS](https://huggingface.co/spaces/OpenMOSS-Team/MOSS-TTS), [MOSS-TTSD-v1.0](https://huggingface.co/spaces/OpenMOSS-Team/MOSS-TTSD-v1.0), [MOSS-VoiceGenerator](https://huggingface.co/spaces/OpenMOSS-Team/MOSS-VoiceGenerator).
 
