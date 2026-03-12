@@ -34,6 +34,7 @@ MOSS‑TTS 家族是由 [MOSI.AI](https://mosi.cn/#hero) 与 [OpenMOSS 团队](h
 
 <a id="news"></a>
 ## 新闻
+* 2026.3.12：🚀 新增 MOSS-TTS（Delay）的 SGLang 后端支持，实现高效推理。
 * 2026.3.11：📘 新增 MossTTSDelay 架构微调教程，适用于 MOSS-TTS（Delay）、MOSS-TTSD、MOSS-VoiceGenerator 和 MOSS-SoundEffect！
 * 2026.3.10：⚡️ 大幅优化了 llama.cpp 推理管线的显存占用。现在 8B 模型可以运行在 8GB 显存的 GPU 上！
 * 2026.3.4：新增 **无 PyTorch 推理** 支持 — 通过 [llama.cpp](https://github.com/ggerganov/llama.cpp) + ONNX Runtime 实现端侧轻量部署。量化 GGUF 权重发布于 [`OpenMOSS-Team/MOSS-TTS-GGUF`](https://huggingface.co/OpenMOSS-Team/MOSS-TTS-GGUF)，ONNX 音频编解码器发布于 [`OpenMOSS-Team/MOSS-Audio-Tokenizer-ONNX`](https://huggingface.co/OpenMOSS-Team/MOSS-Audio-Tokenizer-ONNX)。详见 [llama.cpp 后端](#llamacpp-后端无-pytorch-推理)。
@@ -413,18 +414,18 @@ python -m moss_tts_delay.llama_cpp \
 
 ## SGLang 后端（加速推理）
 
-MOSS-TTS 支持使用 OpenMOSS 深度扩展的 [SGLang](https://github.com/OpenMOSS/sglang) 运行融合后的 MOSS-TTS 与 MOSS-Audio-Tokenizer 模型，实现面向音频生成的 **高效推理**。
+MOSS-TTS（Delay）支持使用 OpenMOSS 深度扩展的 [SGLang](https://github.com/OpenMOSS/sglang) 运行融合后的 MOSS-TTS 与 MOSS-Audio-Tokenizer 模型，实现面向音频生成的 **高效推理**。
 
 ### 快速开始
 
 ```bash
-# 1. 克隆定制 SGLang 分支
-git clone https://github.com/OpenMOSS/sglang.git -b moss-tts-with-cat
+# 1. 克隆 SGLang 仓库
+git clone https://github.com/OpenMOSS/sglang.git
 
 # 2. 安装 SGLang
 pip install -e ./sglang/python[all]
 
-# 3. 解决 SGLang 的 CuDNN 兼容性报错
+# 3. (可选) 解决 SGLang 的 CuDNN 兼容性报错
 #    RuntimeError: CRITICAL WARNING: PyTorch 2.9.1 & CuDNN Compatibility Issue Detected
 pip install nvidia-cudnn-cu12==9.16.0.29
 
@@ -447,8 +448,8 @@ sglang serve --model-path weights/MOSS-TTS-Delay-With-Codec --delay-pattern --tr
 curl -X POST http://localhost:30000/generate \
   -H "Content-Type: application/json" \
   -d '{
-    "text": "欢迎使用MOSS T T S 语音合成模型。",
-    "audio_data": "<path-to-audio-file>",
+    "text": "新增 SGLang 后端支持，实现高效推理。",
+    "audio_data": "https://cdn.jsdelivr.net/gh/OpenMOSS/MOSS-TTSD@main/legacy/v0.7/examples/zh_spk1_moon.wav",
     "sampling_params": {
       "max_new_tokens": 512,
       "temperature": 1.7,
@@ -459,9 +460,7 @@ curl -X POST http://localhost:30000/generate \
 ```
 
 - `text` 表示待合成的文本内容；可在前缀加入 `${token:25}` 进行 token 控制，例如 `${token:25}你好 世界`
-- `audio_data` 表示可选的参考音频；不传入时会生成随机音色的音频，也可以是 `<path-to-audio-file>`
-- `audio_data` 也可以是 `data:audio/wav;base64,{b64_audio}`
-- `audio_data` 还可以是 `<audio-download-url>`
+- `audio_data` 表示可选的参考音频；不传入时会生成随机音色的音频，也可以是 `<path-to-audio-file>` 或 `data:audio/wav;base64,{b64_audio}`，其中 `b64_audio` 为 wav 文件的 base64 字符串。
 
 ```json
 {"text": "<wav-base64>", "...": "..."}

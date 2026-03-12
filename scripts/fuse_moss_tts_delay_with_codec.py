@@ -784,96 +784,79 @@ def validate_args(args: argparse.Namespace) -> argparse.Namespace:
 
 
 def main() -> None:
-    output_dir: Path | None = None
-    output_dir_created = False
+    args = parse_args()
+    args = validate_args(args)
+    model_path = _require_namespace_path(args, "model_path")
+    codec_model_path = _require_namespace_path(args, "codec_model_path")
+    output_dir = _require_namespace_path(args, "save_path")
 
-    try:
-        args = parse_args()
-        args = validate_args(args)
-        model_path = _require_namespace_path(args, "model_path")
-        codec_model_path = _require_namespace_path(args, "codec_model_path")
-        output_dir = _require_namespace_path(args, "save_path")
+    main_config = load_json(model_path / "config.json")
+    codec_config = load_json(codec_model_path / "config.json")
+    main_index = load_source_index(model_path)
+    codec_index = load_source_index(codec_model_path)
+    tokenizer_filenames = collect_tokenizer_asset_filenames(model_path)
+    merged_config = build_merged_config(main_config, codec_config)
 
-        main_config = load_json(model_path / "config.json")
-        codec_config = load_json(codec_model_path / "config.json")
-        main_index = load_source_index(model_path)
-        codec_index = load_source_index(codec_model_path)
-        tokenizer_filenames = collect_tokenizer_asset_filenames(model_path)
-        merged_config = build_merged_config(main_config, codec_config)
+    output_dir.mkdir(parents=True, exist_ok=False)
 
-        output_dir.mkdir(parents=True, exist_ok=False)
-        output_dir_created = True
+    copied_tokenizer_files = copy_tokenizer_assets(
+        model_path,
+        output_dir,
+        tokenizer_filenames,
+    )
+    copy_processor_source(output_dir)
+    write_processor_config(output_dir, merged_config)
+    patch_tokenizer_config_processor_class(
+        output_dir / TOKENIZER_CONFIG_FILENAME,
+        PROCESSOR_CLASS_NAME,
+    )
 
-        copied_tokenizer_files = copy_tokenizer_assets(
+    write_merged_config(output_dir, merged_config)
+
+    main_weight_map = require_weight_map(main_index, "main_index")
+    remapped_main_weight_map = build_remapped_main_weight_map(main_weight_map)
+    codec_weight_map = require_weight_map(codec_index, "codec_index")
+    main_groups = group_weight_map_by_shard(main_weight_map)
+    codec_groups = group_weight_map_by_shard(codec_weight_map)
+
+    expected_codec_weight_map = build_prefixed_codec_keys(
+        codec_weight_map,
+        remapped_main_weight_map,
+        CODEC_PREFIX,
+    )
+
+    merged_weight_map = write_merged_shards(
+        output_dir,
+        iter_merged_tensors(
             model_path,
-            output_dir,
-            tokenizer_filenames,
-        )
-        copy_processor_source(output_dir)
-        write_processor_config(output_dir, merged_config)
-        patch_tokenizer_config_processor_class(
-            output_dir / TOKENIZER_CONFIG_FILENAME,
-            PROCESSOR_CLASS_NAME,
-        )
-
-        write_merged_config(output_dir, merged_config)
-
-        main_weight_map = require_weight_map(main_index, "main_index")
-        remapped_main_weight_map = build_remapped_main_weight_map(main_weight_map)
-        codec_weight_map = require_weight_map(codec_index, "codec_index")
-        main_groups = group_weight_map_by_shard(main_weight_map)
-        codec_groups = group_weight_map_by_shard(codec_weight_map)
-
-        expected_codec_weight_map = build_prefixed_codec_keys(
-            codec_weight_map,
-            remapped_main_weight_map,
+            main_groups,
+            codec_model_path,
+            codec_groups,
             CODEC_PREFIX,
+        ),
+    )
+
+    expected_merged_keys = set(remapped_main_weight_map) | set(expected_codec_weight_map)
+    actual_merged_keys = set(merged_weight_map)
+    if actual_merged_keys != expected_merged_keys:
+        missing_keys = sorted(expected_merged_keys - actual_merged_keys)
+        unexpected_keys = sorted(actual_merged_keys - expected_merged_keys)
+        details: list[str] = []
+        if missing_keys:
+            details.append(f"missing key '{missing_keys[0]}'")
+        if unexpected_keys:
+            details.append(f"unexpected key '{unexpected_keys[0]}'")
+        raise ValueError(
+            f"Merged shard output keys do not match expected keys: {', '.join(details)}"
         )
 
-        merged_weight_map = write_merged_shards(
-            output_dir,
-            iter_merged_tensors(
-                model_path,
-                main_groups,
-                codec_model_path,
-                codec_groups,
-                CODEC_PREFIX,
-            ),
-        )
+    write_merged_index(output_dir, merged_weight_map)
+    verification = verify_fused_artifact(output_dir, main_index, codec_index, CODEC_PREFIX)
+    verify_processor_artifacts(output_dir, merged_config)
 
-        expected_merged_keys = set(remapped_main_weight_map) | set(
-            expected_codec_weight_map
-        )
-        actual_merged_keys = set(merged_weight_map)
-        if actual_merged_keys != expected_merged_keys:
-            missing_keys = sorted(expected_merged_keys - actual_merged_keys)
-            unexpected_keys = sorted(actual_merged_keys - expected_merged_keys)
-            details: list[str] = []
-            if missing_keys:
-                details.append(f"missing key '{missing_keys[0]}'")
-            if unexpected_keys:
-                details.append(f"unexpected key '{unexpected_keys[0]}'")
-            raise ValueError(
-                f"Merged shard output keys do not match expected keys: {', '.join(details)}"
-            )
-
-        write_merged_index(output_dir, merged_weight_map)
-        verification = verify_fused_artifact(
-            output_dir, main_index, codec_index, CODEC_PREFIX
-        )
-        verify_processor_artifacts(output_dir, merged_config)
-
-        print(
-            f"Fused checkpoint ready: tokenizer_files={len(copied_tokenizer_files)} main_weights={verification['main_weight_count']} codec_weights={verification['codec_weight_count']} output_shards={verification['output_shard_count']}"
-        )
-    except (FileExistsError, FileNotFoundError, ValueError) as exc:
-        if output_dir_created and output_dir is not None:
-            cleanup_partial_output_dir(output_dir)
-        raise SystemExit(str(exc)) from exc
-    except Exception:
-        if output_dir_created and output_dir is not None:
-            cleanup_partial_output_dir(output_dir)
-        raise
+    print(
+        f"Fused checkpoint ready: tokenizer_files={len(copied_tokenizer_files)} main_weights={verification['main_weight_count']} codec_weights={verification['codec_weight_count']} output_shards={verification['output_shard_count']}"
+    )
 
 
 if __name__ == "__main__":
