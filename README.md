@@ -58,6 +58,7 @@ MOSS‑TTS Family is an open‑source **speech and sound generation model family
   - [MOSS-TTS Basic Usage](#moss-tts-basic-usage)
 - [Fine-Tuning](#fine-tuning)
 - [llama.cpp Backend (Torch-Free Inference)](#llamacpp-backend-torch-free-inference)
+- [SGLang Backend (Accelerated Inference)](#sglang-backend-accelerated-inference)
 - [Evaluation](#evaluation)
   - [MOSS-TTS](#moss-tts-seed-tts-eval)
   - [MOSS-TTSD](#moss-ttsd-subjective--ttsd-eval)
@@ -401,6 +402,64 @@ Key config options:
 - `flash_attn: auto | enabled | disabled` — flash attention for lower peak VRAM during prefill
 
 For full documentation, see [moss_tts_delay/llama_cpp/README.md](moss_tts_delay/llama_cpp/README.md).
+
+## SGLang Backend (Accelerated Inference)
+
+MOSS-TTS supports running the fused MOSS-TTS and MOSS-Audio-Tokenizer model with the deeply extended [SGLang](https://github.com/OpenMOSS/sglang) from OpenMOSS, enabling efficient inference for audio generation.
+
+### Quick Start
+
+```bash
+# 1. Clone the custom SGLang branch
+git clone https://github.com/OpenMOSS/sglang.git -b moss-tts-with-cat
+
+# 2. Install SGLang
+pip install -e ./sglang/python[all]
+
+# 3. Fix the SGLang CuDNN compatibility error
+#    RuntimeError: CRITICAL WARNING: PyTorch 2.9.1 & CuDNN Compatibility Issue Detected
+pip install nvidia-cudnn-cu12==9.16.0.29
+
+# 4. Download the model and audio tokenizer weights
+huggingface-cli download OpenMOSS-Team/MOSS-TTS --local-dir weights/MOSS-TTS
+huggingface-cli download OpenMOSS-Team/MOSS-Audio-Tokenizer --local-dir weights/MOSS-Audio-Tokenizer
+
+# 5. Fuse the model and audio tokenizer weights
+python scripts/fuse_moss_tts_delay_with_codec.py --model-path weights/MOSS-TTS --codec-model-path weights/MOSS-Audio-Tokenizer --save-path weights/MOSS-TTS-Delay-With-Codec
+
+# 6. Start the service
+sglang serve --model-path weights/MOSS-TTS-Delay-With-Codec --delay-pattern --trust-remote-code
+```
+
+> **Note:** The first request after starting the service for the first time may trigger a lengthy compilation step. This is expected, not a bug, so please wait patiently.
+
+### Request and Response
+
+```bash
+curl -X POST http://localhost:30000/generate \
+  -H "Content-Type: application/json" \
+  -d '{
+    "text": "欢迎使用MOSS T T S 语音合成模型。",
+    "audio_data": "<path-to-audio-file>",
+    "sampling_params": {
+      "max_new_tokens": 512,
+      "temperature": 1.7,
+      "top_p": 0.8,
+      "top_k": 25
+    }
+  }'
+```
+
+- `text` denotes the text content to be synthesized; you can prepend `${token:25}` for token control, for example `${token:25}你好 世界`
+- `audio_data` denotes the optional reference audio; if omitted, the model generates audio with a random timbre, and it can also be `<path-to-audio-file>`
+- `audio_data` can also be `data:audio/wav;base64,{b64_audio}`
+- `audio_data` can also be `<audio-download-url>`
+
+```json
+{"text": "<wav-base64>", "...": "..."}
+```
+
+The HTTP response is a JSON object and may contain multiple fields. The `.text` field stores the WAV base64 string for the generated audio. In most cases, you only need to extract that field and base64-decode it; for example, after saving the response as `response.json`, you can run `jq -r '.text' response.json | base64 -d -i > output.wav`.
 
 ## Evaluation
 

@@ -60,6 +60,7 @@ MOSS‑TTS 家族是由 [MOSI.AI](https://mosi.cn/#hero) 与 [OpenMOSS 团队](h
   - [基础用法](#moss-tts-basic-usage)
   - [微调](#fine-tuning)
 - [llama.cpp 后端（无 PyTorch 推理）](#llamacpp-后端无-pytorch-推理)
+- [SGLang 后端（加速推理）](#sglang-后端加速推理)
 - [评测](#evaluation)
   - [MOSS-TTS 评测](#eval-moss-tts)
   - [MOSS-TTSD 评测](#eval-moss-ttsd)
@@ -409,6 +410,64 @@ python -m moss_tts_delay.llama_cpp \
 - `flash_attn: auto | enabled | disabled` — flash attention 用于降低 prefill 阶段的峰值显存
 
 完整文档请查看 [moss_tts_delay/llama_cpp/README.md](moss_tts_delay/llama_cpp/README.md)。
+
+## SGLang 后端（加速推理）
+
+MOSS-TTS 支持使用 OpenMOSS 深度扩展的 [SGLang](https://github.com/OpenMOSS/sglang) 运行融合后的 MOSS-TTS 与 MOSS-Audio-Tokenizer 模型，实现面向音频生成的 **高效推理**。
+
+### 快速开始
+
+```bash
+# 1. 克隆定制 SGLang 分支
+git clone https://github.com/OpenMOSS/sglang.git -b moss-tts-with-cat
+
+# 2. 安装 SGLang
+pip install -e ./sglang/python[all]
+
+# 3. 解决 SGLang 的 CuDNN 兼容性报错
+#    RuntimeError: CRITICAL WARNING: PyTorch 2.9.1 & CuDNN Compatibility Issue Detected
+pip install nvidia-cudnn-cu12==9.16.0.29
+
+# 4. 下载模型与音频编解码器权重
+huggingface-cli download OpenMOSS-Team/MOSS-TTS --local-dir weights/MOSS-TTS
+huggingface-cli download OpenMOSS-Team/MOSS-Audio-Tokenizer --local-dir weights/MOSS-Audio-Tokenizer
+
+# 5. 融合模型与音频编解码器权重
+python scripts/fuse_moss_tts_delay_with_codec.py --model-path weights/MOSS-TTS --codec-model-path weights/MOSS-Audio-Tokenizer --save-path weights/MOSS-TTS-Delay-With-Codec
+
+# 6. 启动服务
+sglang serve --model-path weights/MOSS-TTS-Delay-With-Codec --delay-pattern --trust-remote-code
+```
+
+> **注意：** 首次启动服务后的第一次请求会触发较长时间的编译，这不是故障，请耐心等待。
+
+### 请求与返回
+
+```bash
+curl -X POST http://localhost:30000/generate \
+  -H "Content-Type: application/json" \
+  -d '{
+    "text": "欢迎使用MOSS T T S 语音合成模型。",
+    "audio_data": "<path-to-audio-file>",
+    "sampling_params": {
+      "max_new_tokens": 512,
+      "temperature": 1.7,
+      "top_p": 0.8,
+      "top_k": 25
+    }
+  }'
+```
+
+- `text` 表示待合成的文本内容；可在前缀加入 `${token:25}` 进行 token 控制，例如 `${token:25}你好 世界`
+- `audio_data` 表示可选的参考音频；不传入时会生成随机音色的音频，也可以是 `<path-to-audio-file>`
+- `audio_data` 也可以是 `data:audio/wav;base64,{b64_audio}`
+- `audio_data` 还可以是 `<audio-download-url>`
+
+```json
+{"text": "<wav-base64>", "...": "..."}
+```
+
+HTTP 响应为 JSON 对象，可能包含多个字段；其中 `.text` 字段存放生成音频的 wav base64 字符串。通常只需提取该字段并做 base64 解码；例如将响应保存为 `response.json` 后，可执行 `jq -r '.text' response.json | base64 -d -i > output.wav`。
 
 <a id="evaluation"></a>
 ## 评测
