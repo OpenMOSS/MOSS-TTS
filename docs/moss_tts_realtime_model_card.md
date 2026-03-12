@@ -32,6 +32,17 @@ By tightly integrating multi-turn context modeling with low-latency streaming sy
 |---|---:|---:|---:|---:|---:|
 | **MOSS-TTS-Realtime** | 0.8 | 0.6 | 30 | 1.1 | 50 |
 
+
+### 1.4 TTFB（Time To First Byte） and RTF（Real-Time Factor）
+The following results are tested on a single L20 GPU.
+| Model | TTFB (ms) | RTF |
+|-------------|-----------|-----|
+| **MOSS-TTS-Realtime** | 180（After warm up）| 0.51 |
+
+We deployed qwen3.5 9B through vllm for testing $T_{\text{LLM-first-sentence}}$，The time to generate 12 tokens (TTS prefill length) was 197ms.
+
+$T_{\text{LLM-first-sentence}} + T_{\text{MOSS-TTS-Realtime-TTFB}} = 197ms + 180ms = 377ms$
+
 ## 2. Quickstart
 
 ### Environment Setup
@@ -135,6 +146,19 @@ for i, generated_tokens, in enumerate(result):
 You can use streaming output in Gradio with the following usage.
 ```bash
 python3 app.py
+```
+
+### Launch MOSS-TTS-Realtime Fastapi Server
+Note: Currently only **batch size = 1** is supported.
+
+You can start a TTS server with the following command:
+```bash
+python3 fast_api.py
+```
+
+Then you can call it via the method in the following code:
+```bash
+python3 tts_client.py
 ```
 
 ### Single-turn Streaming Usage

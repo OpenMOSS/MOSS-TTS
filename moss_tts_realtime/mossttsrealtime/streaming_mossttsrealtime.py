@@ -738,18 +738,23 @@ class AudioStreamDecoder:
         codec,
         chunk_frames: int = 40,
         overlap_frames: int = 4,
+        initial_chunk_frames: Optional[int] = None,
+        decode_chunk_duration: Optional[float] = None,
         decode_kwargs: Optional[dict] = None,
         device: Optional[torch.device] = None,
     ):
         self.codec = codec
         self.chunk_frames = chunk_frames
         self.overlap_frames = overlap_frames
+        self.initial_chunk_frames = initial_chunk_frames
+        self.decode_chunk_duration = decode_chunk_duration
         self.decode_kwargs = decode_kwargs or {}
         self.device = device
 
         self._buffer: list[torch.Tensor] = []
         self._buffer_len = 0
         self._prev_tail: Optional[torch.Tensor] = None
+        self._chunks_emitted = 0
 
     def push_tokens(self, audio_tokens: np.ndarray | torch.Tensor):
         if isinstance(audio_tokens, np.ndarray):
@@ -759,10 +764,17 @@ class AudioStreamDecoder:
         self._buffer.append(audio_tokens)
         self._buffer_len += audio_tokens.shape[0]
 
+    @property
+    def _active_chunk_frames(self) -> int:
+        if self.initial_chunk_frames is not None:
+            return min(self.initial_chunk_frames + self._chunks_emitted, self.chunk_frames)
+        return self.chunk_frames
+
     def audio_chunks(self) -> Iterable[torch.Tensor]:
-        while self._buffer_len >= self.chunk_frames:
-            chunk_tokens = self._consume_frames(self.chunk_frames)
-            wav = self._decode(chunk_tokens, chunk_duration=0.32)
+        while self._buffer_len >= self._active_chunk_frames:
+            chunk_tokens = self._consume_frames(self._active_chunk_frames)
+            wav = self._decode(chunk_tokens)
+            self._chunks_emitted += 1
             yield self._apply_crossfade(wav)
 
     def flush(self) -> Optional[torch.Tensor]:
@@ -788,7 +800,7 @@ class AudioStreamDecoder:
         self._buffer_len -= num_frames - remaining
         return torch.cat(frames, dim=0)
 
-    def _decode(self, tokens: torch.Tensor, chunk_duration: float = 0.32) -> torch.Tensor:
+    def _decode(self, tokens: torch.Tensor) -> torch.Tensor:
         device = self.device
         if device is None:
             if hasattr(self.codec, "device"):
@@ -801,22 +813,8 @@ class AudioStreamDecoder:
         if device is not None:
             tokens = tokens.to(device)
         tokens_t = tokens.permute(1, 0)
-        # allow callers to override decode settings (e.g. chunk_duration=-1 to disable internal streaming)
         decode_kwargs = dict(self.decode_kwargs) if self.decode_kwargs else {}
-        if "chunk_duration" in decode_kwargs:
-            override = decode_kwargs.pop("chunk_duration")
-            if override is None:
-                chunk_duration_arg = None
-            else:
-                try:
-                    override_f = float(override)
-                except Exception:
-                    override_f = None
-                chunk_duration_arg = None if override_f is None or override_f <= 0 else override_f
-        else:
-            chunk_duration_arg = chunk_duration
-
-        decoded = self.codec.decode(tokens_t, chunk_duration=chunk_duration_arg, **decode_kwargs)
+        decoded = self.codec.decode(tokens_t, chunk_duration=self.decode_chunk_duration, **decode_kwargs)
         if isinstance(decoded, dict):
             wav = decoded["audio"][0]
         else:

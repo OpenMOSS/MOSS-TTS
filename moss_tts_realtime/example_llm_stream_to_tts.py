@@ -330,4 +330,4 @@ if __name__ == "__main__":
 #   python3 example_llm_stream_to_tts.py \
 #     --model_path OpenMOSS-Team/MOSS-TTS-Realtime \
 #     --codec_path OpenMOSS-Team/MOSS-Audio-Tokenizer \
-#     --prompt_wav ./audio/prompt_audio1.mp3
+#     --prompt_wav ./audio/prompt_audio1.mp3 
