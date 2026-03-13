@@ -248,4 +248,4 @@ class MossTTSDelayWithCodecProcessor(ProcessorMixin):
         return wav * factor
 
 
-__all__ = ["AsteroidWithCodecProcessor"]
+__all__ = ["MossTTSDelayWithCodecProcessor"]

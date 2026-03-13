@@ -5,6 +5,7 @@ import copy
 import json
 import re
 import shutil
+import sys
 from collections.abc import Callable, Iterable, Iterator, Mapping
 from pathlib import Path
 from types import TracebackType
@@ -712,7 +713,12 @@ def parse_args() -> argparse.Namespace:
     _ = parser.add_argument(
         "--save-path",
         required=True,
-        help="Path to the fused output directory. Must not already exist.",
+        help="Path to the fused output directory. Existing directories require --overwrite or interactive confirmation.",
+    )
+    _ = parser.add_argument(
+        "--overwrite",
+        action="store_true",
+        help="Overwrite an existing save directory without prompting.",
     )
     return parser.parse_args()
 
@@ -739,6 +745,13 @@ def _require_namespace_path(args: argparse.Namespace, attr_name: str) -> Path:
     return value
 
 
+def _require_namespace_bool(args: argparse.Namespace, attr_name: str) -> bool:
+    value = getattr(args, attr_name, None)
+    if not isinstance(value, bool):
+        raise ValueError(f"{attr_name} was not normalized to bool")
+    return value
+
+
 def _validate_source_dir(arg_name: str, model_dir: Path) -> None:
     if not model_dir.exists():
         raise FileNotFoundError(f"{arg_name}: {model_dir} does not exist")
@@ -760,6 +773,38 @@ def _validate_source_dir(arg_name: str, model_dir: Path) -> None:
         )
 
 
+def _prompt_overwrite_confirmation(save_path: Path) -> bool:
+    if not sys.stdin.isatty():
+        raise FileExistsError(
+            f"--save-path already exists: {save_path}. Re-run with --overwrite to replace it."
+        )
+
+    response = input(
+        f"--save-path already exists: {save_path}. Overwrite it? [y/N]: "
+    ).strip()
+    return response.lower() in {"y", "yes"}
+
+
+def _resolve_overwrite_choice(save_path: Path, overwrite: bool) -> bool:
+    if not save_path.exists():
+        return False
+
+    if not save_path.is_dir():
+        raise FileExistsError(
+            f"--save-path already exists and is not a directory: {save_path}"
+        )
+
+    if overwrite:
+        return True
+
+    if _prompt_overwrite_confirmation(save_path):
+        return True
+
+    raise FileExistsError(
+        f"Refusing to overwrite existing --save-path: {save_path}. Re-run with --overwrite to replace it."
+    )
+
+
 def validate_args(args: argparse.Namespace) -> argparse.Namespace:
     args.model_path = _normalize_path(
         _require_namespace_str(args, "model_path", "--model-path"),
@@ -777,8 +822,10 @@ def validate_args(args: argparse.Namespace) -> argparse.Namespace:
     _validate_source_dir("--model-path", args.model_path)
     _validate_source_dir("--codec-model-path", args.codec_model_path)
 
-    if args.save_path.exists():
-        raise FileExistsError(f"--save-path already exists: {args.save_path}")
+    args.overwrite = _resolve_overwrite_choice(
+        args.save_path,
+        _require_namespace_bool(args, "overwrite"),
+    )
 
     return args
 
@@ -789,6 +836,7 @@ def main() -> None:
     model_path = _require_namespace_path(args, "model_path")
     codec_model_path = _require_namespace_path(args, "codec_model_path")
     output_dir = _require_namespace_path(args, "save_path")
+    overwrite = _require_namespace_bool(args, "overwrite")
 
     main_config = load_json(model_path / "config.json")
     codec_config = load_json(codec_model_path / "config.json")
@@ -796,6 +844,9 @@ def main() -> None:
     codec_index = load_source_index(codec_model_path)
     tokenizer_filenames = collect_tokenizer_asset_filenames(model_path)
     merged_config = build_merged_config(main_config, codec_config)
+
+    if overwrite and output_dir.exists():
+        cleanup_partial_output_dir(output_dir)
 
     output_dir.mkdir(parents=True, exist_ok=False)
 

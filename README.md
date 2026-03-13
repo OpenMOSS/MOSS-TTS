@@ -32,7 +32,7 @@
 MOSS‑TTS Family is an open‑source **speech and sound generation model family** from [MOSI.AI](https://mosi.cn/#hero) and the [OpenMOSS team](https://www.open-moss.com/). It is designed for **high‑fidelity**, **high‑expressiveness**, and **complex real‑world scenarios**, covering stable long‑form speech, multi‑speaker dialogue, voice/character design, environmental sound effects, and real‑time streaming TTS.
 
 ## News
-* 2026.3.12: 🚀 Added SGLang backend support for MOSS-TTS (Delay), enabling efficient inference.
+* 2026.3.12: 🚀 Added SGLang backend support for the `MossTTSDelay` architecture, enabling efficient inference for MOSS-TTS (Delay) and MOSS-SoundEffect, with around **3× faster** generation throughput!
 * 2026.3.11: 📘 Added a tutorial on fine-tuning the MossTTSDelay architecture, suitable for MOSS-TTS(Delay), MOSS-TTSD, MOSS-VoiceGenerator, and MOSS-SoundEffect!
 * 2026.3.10: ⚡️ Significantly optimized the VRAM usage of llama.cpp inference pipeline. Now 8B model fits onto 8GB GPUs!
 * 2026.3.4: 🚀 Added **PyTorch-free inference support** — enabling lightweight on-device deployment via **llama.cpp + ONNX Runtime**. Quantized **GGUF weights** are released at [OpenMOSS-Team/MOSS-TTS-GGUF](https://huggingface.co/OpenMOSS-Team/MOSS-TTS-GGUF), and the **ONNX audio tokenizer** is available at [OpenMOSS-Team/MOSS-Audio-Tokenizer-ONNX](https://huggingface.co/OpenMOSS-Team/MOSS-Audio-Tokenizer-ONNX). See the [llama.cpp backend](#llamacpp-backend-torch-free-inference) for details.
@@ -432,9 +432,13 @@ python scripts/fuse_moss_tts_delay_with_codec.py --model-path weights/MOSS-TTS -
 sglang serve --model-path weights/MOSS-TTS-Delay-With-Codec --delay-pattern --trust-remote-code
 ```
 
+> If the fused output directory already exists, you can append `--overwrite` to replace it directly, or confirm the overwrite interactively when prompted.
+
 > **Note:** The first request after starting the service for the first time may trigger a lengthy compilation step. This is expected, not a bug, so please wait patiently.
 
 ### Request and Response
+
+#### MOSS-TTS (Delay)
 
 ```bash
 curl -X POST http://localhost:30000/generate \
@@ -453,6 +457,28 @@ curl -X POST http://localhost:30000/generate \
 
 - `text` denotes the text content to be synthesized; you can prepend `${token:25}` for token control, for example `${token:25}Hello World`
 - `audio_data` denotes the optional reference audio; if omitted, the model generates audio with a random timbre, and it can be either `<path-to-audio-file>` or `data:audio/wav;base64,{b64_audio}`, where `b64_audio` is the base64 string of a wav file.
+
+#### MOSS-SoundEffect
+
+```bash
+curl -X POST http://localhost:30000/generate \
+  -H "Content-Type: application/json" \
+  -d '{
+    "text": "${token:125}${ambient_sound:a sports car roaring past on the highway.}",
+    "sampling_params": {
+      "max_new_tokens": 512,
+      "temperature": 1.5,
+      "top_p": 0.6,
+      "top_k": 50
+    }
+  }'
+```
+
+- `text` should contain only two tagged fields: `${token:125}` and `${ambient_sound:...}`, where the content after `${ambient_sound:...}` is a natural-language description of the target sound effect.
+- `${token:125}` is recommended for more stable generation.
+- Do not pass `audio_data`, or the model may go OOD.
+
+#### Response
 
 ```json
 {"text": "<wav-base64>", "...": "..."}

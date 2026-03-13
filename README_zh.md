@@ -34,7 +34,7 @@ MOSS‑TTS 家族是由 [MOSI.AI](https://mosi.cn/#hero) 与 [OpenMOSS 团队](h
 
 <a id="news"></a>
 ## 新闻
-* 2026.3.12：🚀 新增 MOSS-TTS（Delay）的 SGLang 后端支持，实现高效推理。
+* 2026.3.12：🚀 新增面向 `MossTTSDelay` 架构的 SGLang 后端支持，可用于 MOSS-TTS（Delay）和 MOSS-SoundEffect 的高效推理，生成吞吐可提升约 **3 倍**！
 * 2026.3.11：📘 新增 MossTTSDelay 架构微调教程，适用于 MOSS-TTS（Delay）、MOSS-TTSD、MOSS-VoiceGenerator 和 MOSS-SoundEffect！
 * 2026.3.10：⚡️ 大幅优化了 llama.cpp 推理管线的显存占用。现在 8B 模型可以运行在 8GB 显存的 GPU 上！
 * 2026.3.4：新增 **无 PyTorch 推理** 支持 — 通过 [llama.cpp](https://github.com/ggerganov/llama.cpp) + ONNX Runtime 实现端侧轻量部署。量化 GGUF 权重发布于 [`OpenMOSS-Team/MOSS-TTS-GGUF`](https://huggingface.co/OpenMOSS-Team/MOSS-TTS-GGUF)，ONNX 音频编解码器发布于 [`OpenMOSS-Team/MOSS-Audio-Tokenizer-ONNX`](https://huggingface.co/OpenMOSS-Team/MOSS-Audio-Tokenizer-ONNX)。详见 [llama.cpp 后端](#llamacpp-后端无-pytorch-推理)。
@@ -440,9 +440,13 @@ python scripts/fuse_moss_tts_delay_with_codec.py --model-path weights/MOSS-TTS -
 sglang serve --model-path weights/MOSS-TTS-Delay-With-Codec --delay-pattern --trust-remote-code
 ```
 
+> 如果融合输出目录已存在，可以在命令中追加 `--overwrite` 直接覆盖，或在脚本提示后输入字符确认覆盖。
+
 > **注意：** 首次启动服务后的第一次请求会触发较长时间的编译，这不是故障，请耐心等待。
 
 ### 请求与返回
+
+#### MOSS-TTS (Delay)
 
 ```bash
 curl -X POST http://localhost:30000/generate \
@@ -461,6 +465,28 @@ curl -X POST http://localhost:30000/generate \
 
 - `text` 表示待合成的文本内容；可在前缀加入 `${token:25}` 进行 token 控制，例如 `${token:25}你好 世界`
 - `audio_data` 表示可选的参考音频；不传入时会生成随机音色的音频，也可以是 `<path-to-audio-file>` 或 `data:audio/wav;base64,{b64_audio}`，其中 `b64_audio` 为 wav 文件的 base64 字符串。
+
+#### MOSS-SoundEffect
+
+```bash
+curl -X POST http://localhost:30000/generate \
+  -H "Content-Type: application/json" \
+  -d '{
+    "text": "${token:125}${ambient_sound:a sports car roaring past on the highway.}",
+    "sampling_params": {
+      "max_new_tokens": 512,
+      "temperature": 1.5,
+      "top_p": 0.6,
+      "top_k": 50
+    }
+  }'
+```
+
+- `text` 中只能包含 `${token:125}` 和 `${ambient_sound:...}` 这两个字段，其中 `${ambient_sound:...}` 后填写音效的文字描述。
+- 对于 MOSS-SoundEffect，建议使用 `${token:125}`，生成会更稳定。
+- 不要传 `audio_data`，否则模型可能会 OOD。
+
+#### 返回
 
 ```json
 {"text": "<wav-base64>", "...": "..."}
