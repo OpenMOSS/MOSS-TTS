@@ -1157,10 +1157,10 @@ def _build_demo(
 
         with gr.Row():
             with gr.Column():
-                user_text = gr.Textbox(label="User Text(optional)", lines=2)
-                assistant_text = gr.Textbox(label="Assistant Text", lines=6)
                 prompt_audio = gr.Audio(label="Prompt WAV (optional)", type="filepath")
+                assistant_text = gr.Textbox(label="Assistant Text", lines=3)
                 user_audio = gr.Audio(label="User WAV (optional)", type="filepath")
+                user_text = gr.Textbox(label="User Text (optional)", lines=3)
                 use_default_prompt = gr.Checkbox(label="Use Default Prompt WAV (fallback)", value=False)
                 use_default_user = gr.Checkbox(label="Use Default User WAV (fallback)", value=False)
 
