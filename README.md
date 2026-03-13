@@ -78,7 +78,7 @@ When a single piece of audio needs to **sound like a real person**, **pronounce 
 - **MOSS‑TTS**: The flagship production model featuring high fidelity and optimal zero-shot voice cloning. It supports **long-speech generation**, **fine-grained control over Pinyin, phonemes, and duration**, as well as **multilingual/code-switched synthesis**.
 - **MOSS‑TTSD**: A spoken dialogue generation model for expressive, multi-speaker, and ultra-long dialogues. The new **v1.0 version** achieves **industry-leading performance on objective metrics** and **outperformed top closed-source models like Doubao and Gemini 2.5-pro** in subjective evaluations. You can visit the [MOSS-TTSD repository](https://github.com/OpenMOSS/MOSS-TTSD) for details.
 - **MOSS‑VoiceGenerator**: An open-source voice design model capable of generating diverse voices and styles directly from text prompts, **without any reference speech**. It unifies voice design, style control, and synthesis, functioning independently or as a design layer for downstream TTS. Its performance **surpasses other top-tier voice design models in arena ratings**.
-- **MOSS‑TTS‑Realtime**: A multi-turn context-aware model for real-time voice agents. It uses incremental synthesis to ensure natural and coherent replies, making it **ideal for building low-latency voice agents when paired with text models**.
+- **MOSS‑TTS‑Realtime**: A multi-turn context-aware model for real-time voice agents. It uses incremental synthesis to ensure natural and coherent replies, making it **ideal for building low-latency voice agents when paired with text models**. The TTFB (Time To First Byte) of MOSS-TTS-Realtime reaches 180 ms, and the $T_{\text{LLM-first-sentence}} + T_{\text{MOSS-TTS-Realtime-TTFB}}$ is 377 ms.
 - **MOSS‑SoundEffect**: A content creation model specialized in **sound effect generation** with wide category coverage and controllable duration. It generates audio for natural environments, urban scenes, biological sounds, human actions, and musical fragments, suitable for film, games, and interactive experiences.
 
 
@@ -476,6 +476,20 @@ MOSS‑VoiceGenerator demonstrates strong subjective preference across **overall
 <p align="center">
   <img src="./assets/moss_voice_generator_winrate.png" width="70%" />
 </p>
+
+### MOSS‑TTS-Realtime
+We evaluated the TTFB (Time To First Byte) and RTF (Real-Time Factor) of MOSS-TTS-Realtime.
+
+Note: SDPA + torch.compile were enabled during testing. The following results are tested on a single L20 GPU. 
+
+| Model | TTFB (ms) | RTF |
+|-------------|-----------|-----|
+| **MOSS-TTS-Realtime** | 180（After warm up）| 0.51 |
+
+We deployed Qwen3.5-9B using vLLM to measure $T_{\text{LLM-first-sentence}}$. The time required to generate 12 tokens (the TTS prefill length) was 197 ms.
+
+$T_{\text{LLM-first-sentence}} + T_{\text{MOSS-TTS-Realtime-TTFB}} = 197ms + 180ms = 377ms$
+
 
 ## MOSS-Audio-Tokenizer
 

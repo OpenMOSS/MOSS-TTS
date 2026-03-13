@@ -34,12 +34,13 @@ By tightly integrating multi-turn context modeling with low-latency streaming sy
 
 
 ### 1.4 TTFB（Time To First Byte） and RTF（Real-Time Factor）
-The following results are tested on a single L20 GPU.
+Note: SDPA + torch.compile were enabled during testing. The following results are tested on a single L20 GPU. 
+
 | Model | TTFB (ms) | RTF |
 |-------------|-----------|-----|
 | **MOSS-TTS-Realtime** | 180（After warm up）| 0.51 |
 
-We deployed qwen3.5 9B through vllm for testing $T_{\text{LLM-first-sentence}}$，The time to generate 12 tokens (TTS prefill length) was 197ms.
+We deployed Qwen3.5-9B using vLLM to measure $T_{\text{LLM-first-sentence}}$. The time required to generate 12 tokens (the TTS prefill length) was 197 ms.
 
 $T_{\text{LLM-first-sentence}} + T_{\text{MOSS-TTS-Realtime-TTFB}} = 197ms + 180ms = 377ms$
 
@@ -74,7 +75,8 @@ uv pip install --torch-backend cu128 -e .
 cd moss_tts_realtime
 ```
 
-### Basic Usage (Non streaming)
+### Basic Usage (Non streaming) 
+Note: It is recommended to use SDPA + torch.compile during inference, as this can provide faster inference speed.
 
 ```python
 import importlib.util
@@ -144,6 +146,9 @@ for i, generated_tokens, in enumerate(result):
 
 ### Launch the Gradio streaming demo (recommended)
 You can use streaming output in Gradio with the following usage.
+
+Note: It is recommended to use SDPA + torch.compile during inference, as this can provide faster inference speed.
+
 ```bash
 python3 app.py
 ```

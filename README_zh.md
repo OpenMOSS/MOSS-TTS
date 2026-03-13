@@ -81,7 +81,7 @@ MOSS‑TTS 家族是由 [MOSI.AI](https://mosi.cn/#hero) 与 [OpenMOSS 团队](h
 - **MOSS‑TTS**：MOSS‑TTS 是家族中的旗舰量产级 TTS 基础模型，**核心能力是高保真以及最优性能的零样本语音克隆**，支持**长文本长语音生成**、**拼音、音标与时长精细控制**，以及**多语种/中英混合合成**。它可作为大规模旁白、配音和语音产品的核心底座。
 - **MOSS‑TTSD**：MOSS‑TTSD 是对话语音生成模型，用于生成高表现力、多说话人、超长连续对话的音频。本次我们更新了全新的**v1.0版本**，相比于0.7版本，它在音色相似度，说话人切换准确率，词错误率等**客观指标上取得了业界最优的性能**，在竞技场主观评测中，也**战胜了豆包、Gemini2.5-pro**等顶尖闭源模型。详情请访问 [MOSS-TTSD 仓库](https://github.com/OpenMOSS/MOSS-TTSD)。
 - **MOSS‑VoiceGenerator**：MOSS‑VoiceGenerator 是开源音色设计模型，可从文本风格指令直接生成多样的说话人音色或风格，**无需参考音频**。它统一音色设计、风格控制与内容合成，可独立创作，也可作为下游 TTS 的音色设计层。模型性能在**竞技场评分上超过了其余等顶尖音色设计模型**。
-- **MOSS‑TTS‑Realtime**：MOSS‑TTS‑Realtime 是面向实时语音智能体的多轮上下文感知实时 TTS 模型。它结合多轮对话中的文本与历史语音信号进行低时延增量合成，使多轮回复保持连贯、自然且音色一致。**非常适合搭配文本模型构建低时延语音智能体**。
+- **MOSS‑TTS‑Realtime**：MOSS‑TTS‑Realtime 是面向实时语音智能体的多轮上下文感知实时 TTS 模型。它结合多轮对话中的文本与历史语音信号进行低时延增量合成，使多轮回复保持连贯、自然且音色一致。**非常适合搭配文本模型构建低时延语音智能体**。MOSS‑TTS‑Realtime 的 TTFB（Time To First Byte）达到180ms，$T_{\text{LLM-first-sentence}} + T_{\text{MOSS-TTS-Realtime-TTFB}}$ 整体为377ms。
 - **MOSS‑SoundEffect**：MOSS‑SoundEffect 是面向内容制作的**音效生成**模型，具备广泛类别覆盖与可控时长能力。它能根据文本指令生成自然环境、城市场景、生物、人类动作与类音乐片段等音频，适用于影视、游戏、交互体验和数据合成。
 
 <a id="architecture"></a>
@@ -485,6 +485,21 @@ MOSS‑VoiceGenerator 在 **整体偏好**、**指令遵循** 与 **自然度** 
 <p align="center">
   <img src="./assets/moss_voice_generator_winrate.png" width="70%" />
 </p>
+
+<a id="eval-moss-tts-realtime"></a>
+### MOSS‑TTS-Realtime 评测
+我们评估了MOSS-TTS-Realtime的TTFB (Time To First Byte)和RTF(Real-Time Factor)。
+
+注意：在测试期间启用了SDPA + torch.compile。以下结果在单个L20 GPU上进行了测试。
+
+| Model | TTFB (ms) | RTF |
+|-------------|-----------|-----|
+| **MOSS-TTS-Realtime** | 180（After warm up）| 0.51 |
+
+We deployed Qwen3.5-9B using vLLM to measure $T_{\text{LLM-first-sentence}}$. The time required to generate 12 tokens (the TTS prefill length) was 197 ms.
+
+$T_{\text{LLM-first-sentence}} + T_{\text{MOSS-TTS-Realtime-TTFB}} = 197ms + 180ms = 377ms$
+
 
 <a id="audio-tokenizer"></a>
 ## 语音编解码器
