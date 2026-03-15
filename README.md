@@ -32,6 +32,7 @@
 MOSS‑TTS Family is an open‑source **speech and sound generation model family** from [MOSI.AI](https://mosi.cn/#hero) and the [OpenMOSS team](https://www.open-moss.com/). It is designed for **high‑fidelity**, **high‑expressiveness**, and **complex real‑world scenarios**, covering stable long‑form speech, multi‑speaker dialogue, voice/character design, environmental sound effects, and real‑time streaming TTS.
 
 ## News
+* 2026.3.15: 🚀 Added a first-class MOSS-TTS `llama.cpp` implementation in the companion repository [`expectqwq/llama.cpp`](https://github.com/expectqwq/llama.cpp), including end-to-end docs and a runnable pipeline for GGUF backbone inference plus ONNX audio codec decoding. See the [first-class e2e guide](https://github.com/expectqwq/llama.cpp/blob/master/docs/moss-tts-firstclass-e2e.md).
 * 2026.3.10: ⚡️ Significantly optimized the VRAM usage of llama.cpp inference pipeline. Now 8B model fits onto 8GB GPUs !
 * 2026.3.4: 🚀 Added **PyTorch-free inference support** — enabling lightweight on-device deployment via **llama.cpp + ONNX Runtime**. Quantized **GGUF weights** are released at [OpenMOSS-Team/MOSS-TTS-GGUF](https://huggingface.co/OpenMOSS-Team/MOSS-TTS-GGUF), and the **ONNX audio tokenizer** is available at [OpenMOSS-Team/MOSS-Audio-Tokenizer-ONNX](https://huggingface.co/OpenMOSS-Team/MOSS-Audio-Tokenizer-ONNX). See the [llama.cpp backend](#llamacpp-backend-torch-free-inference) for details.
 * 2026.3.4: 🎉 We add MOSS-TTS skills in [ClawHub](https://clawhub.ai) of 🦞 OpenClaw: [feishu-voice-tts](https://clawhub.ai/helloeveryworlds/feishu-voice-tts) and [moss-tts-voice](https://clawhub.ai/luogao2333/moss-tts-voice).
@@ -337,6 +338,10 @@ Additional architecture-specific finetuning tutorials will be added under their 
 ## llama.cpp Backend (Torch-Free Inference)
 
 For lightweight or edge deployment, MOSS-TTS supports a **torch-free** inference path using [llama.cpp](https://github.com/ggerganov/llama.cpp) for the Qwen3 backbone and ONNX Runtime / TensorRT for the audio tokenizer. No PyTorch installation required.
+
+We also maintain a newer first-class MOSS-TTS path in the companion repository [`expectqwq/llama.cpp`](https://github.com/expectqwq/llama.cpp). Unlike the legacy bridge backend documented below, it moves multi-channel embeddings, multi-head outputs, and delay-pattern decoding directly into `llama.cpp`.
+
+For that path, start from the [first-class e2e guide](https://github.com/expectqwq/llama.cpp/blob/master/docs/moss-tts-firstclass-e2e.md).
 
 ### Quick Start
 

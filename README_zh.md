@@ -34,6 +34,7 @@ MOSS‑TTS 家族是由 [MOSI.AI](https://mosi.cn/#hero) 与 [OpenMOSS 团队](h
 
 <a id="news"></a>
 ## 新闻
+* 2026.3.15：🚀 在配套仓库 [`expectqwq/llama.cpp`](https://github.com/expectqwq/llama.cpp) 中新增了 first-class MOSS-TTS `llama.cpp` 实现，提供 GGUF backbone 推理与 ONNX 音频编解码器解码的端到端可运行链路。可从 [first-class e2e 指南](https://github.com/expectqwq/llama.cpp/blob/master/docs/moss-tts-firstclass-e2e_zh.md) 开始。
 * 2026.3.10：⚡️ 大幅优化了 llama.cpp 推理管线的显存占用。现在 8B 模型可以运行在 8GB 显存的 GPU 上！
 * 2026.3.4：新增 **无 PyTorch 推理** 支持 — 通过 [llama.cpp](https://github.com/ggerganov/llama.cpp) + ONNX Runtime 实现端侧轻量部署。量化 GGUF 权重发布于 [`OpenMOSS-Team/MOSS-TTS-GGUF`](https://huggingface.co/OpenMOSS-Team/MOSS-TTS-GGUF)，ONNX 音频编解码器发布于 [`OpenMOSS-Team/MOSS-Audio-Tokenizer-ONNX`](https://huggingface.co/OpenMOSS-Team/MOSS-Audio-Tokenizer-ONNX)。详见 [llama.cpp 后端](#llamacpp-后端无-pytorch-推理)。
 * 2026.3.4：🎉 我们在 🦞 龙虾 的 [ClawHub](https://clawhub.ai) 平台上架了 MOSS-TTS skills：[feishu-voice-tts](https://clawhub.ai/helloeveryworlds/feishu-voice-tts) 与 [moss-tts-voice](https://clawhub.ai/luogao2333/moss-tts-voice)。
@@ -345,6 +346,10 @@ with torch.no_grad():
 ## llama.cpp 后端（无 PyTorch 推理）
 
 MOSS-TTS 支持使用 [llama.cpp](https://github.com/ggerganov/llama.cpp) 运行 Qwen3 backbone，配合 ONNX Runtime / TensorRT 运行音频编解码器，实现 **完全无 PyTorch 依赖** 的轻量端侧推理。
+
+我们也在配套仓库 [`expectqwq/llama.cpp`](https://github.com/expectqwq/llama.cpp) 中维护了一条更新的 first-class MOSS-TTS 链路。与下方介绍的 legacy bridge 后端不同，这条链路把多通道 embedding、多输出头和 delay-pattern decode 直接放进了 `llama.cpp`。
+
+如需使用这条链路，请从 [first-class e2e 指南](https://github.com/expectqwq/llama.cpp/blob/master/docs/moss-tts-firstclass-e2e_zh.md) 开始。
 
 ### 快速开始
 
