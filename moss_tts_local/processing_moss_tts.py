@@ -621,7 +621,7 @@ class MossTTSDelayProcessor(ProcessorMixin):
                 prefix_idx = audio_end_idx
 
             if truncation:
-                raise RuntimeError("Truncation generation is not supported at present")
+                ...
             else:
                 last_audio_end_idx = int(audio_end_indices[-1].item())
                 pad_codes = torch.full(

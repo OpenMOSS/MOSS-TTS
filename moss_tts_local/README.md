@@ -97,7 +97,7 @@ The usage snippets below show direct generation (with/without cloning) and conti
 ### 7.1 Direct Generation & Voice Cloning
 
 ```python
-import os
+import importlib.util
 from pathlib import Path
 import torch
 import torchaudio
@@ -109,32 +109,31 @@ torch.backends.cuda.enable_flash_sdp(True)
 torch.backends.cuda.enable_mem_efficient_sdp(True)
 torch.backends.cuda.enable_math_sdp(True)
 
-class DelayGenerationConfig(GenerationConfig):
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-        self.layers = kwargs.get("layers", [{} for _ in range(32)])
-        self.do_samples = kwargs.get("do_samples", None)
-        self.n_vq_for_inference = 32
-        
-def initial_config(tokenizer, model_name_or_path):
-    generation_config = DelayGenerationConfig.from_pretrained(model_name_or_path)
-    generation_config.pad_token_id = tokenizer.pad_token_id
-    generation_config.eos_token_id = 151653
-    generation_config.max_new_tokens = 1000000
-    generation_config.temperature = 1.0
-    generation_config.top_p = 0.95
-    generation_config.top_k = 100
-    generation_config.repetition_penalty = 1.1
-    generation_config.use_cache = True
-    generation_config.do_sample = False
-    return generation_config
-
-
-
-
-pretrained_model_name_or_path = "OpenMOSS-Team/MOSS-TTS"
+pretrained_model_name_or_path = "OpenMOSS-Team/MOSS-TTS-Local-Transformer"
 device = "cuda" if torch.cuda.is_available() else "cpu"
 dtype = torch.bfloat16 if device == "cuda" else torch.float32
+
+def resolve_attn_implementation() -> str:
+    # Prefer FlashAttention 2 when package + device conditions are met.
+    if (
+        device == "cuda"
+        and importlib.util.find_spec("flash_attn") is not None
+        and dtype in {torch.float16, torch.bfloat16}
+    ):
+        major, _ = torch.cuda.get_device_capability()
+        if major >= 8:
+            return "flash_attention_2"
+
+    # CUDA fallback: use PyTorch SDPA kernels.
+    if device == "cuda":
+        return "sdpa"
+
+    # CPU fallback.
+    return "eager"
+
+
+attn_implementation = resolve_attn_implementation()
+print(f"[INFO] Using attn_implementation={attn_implementation}")
 
 processor = AutoProcessor.from_pretrained(
     pretrained_model_name_or_path,
@@ -162,6 +161,7 @@ text_4 = "nin2 hao3，qing4 wen3 nin2 lai2 zi4 na4 zuo3 cheng4 shi3？"
 text_5 = "您好，请问您来自哪 zuo4 cheng2 shi4？"
 text_6 = "/həloʊ, meɪ aɪ æsk wɪtʃ sɪti juː ɑːr frʌm?/"
 
+# Use audio from ./assets/audio to avoid downloading from the cloud.
 ref_audio_1 = "https://speech-demo.oss-cn-shanghai.aliyuncs.com/moss_tts_demo/tts_readme_demo/reference_zh.wav"
 ref_audio_2 = "https://speech-demo.oss-cn-shanghai.aliyuncs.com/moss_tts_demo/tts_readme_demo/reference_en.m4a"
 
@@ -195,38 +195,16 @@ conversations = [
     ],
 ]
 
-
-
 model = AutoModel.from_pretrained(
     pretrained_model_name_or_path,
     trust_remote_code=True,
-    attn_implementation="sdpa",
+    attn_implementation=attn_implementation,
     torch_dtype=dtype,
 ).to(device)
 model.eval()
 
-generation_config = initial_config(processor.tokenizer, pretrained_model_name_or_path)
-generation_config.n_vq_for_inference = model.channels - 1
-generation_config.do_samples = [True] * model.channels
-generation_config.layers = [
-    {
-        "repetition_penalty": 1.0, 
-        "temperature": 1.5, 
-        "top_p": 1.0, 
-        "top_k": 50
-    }
-] + [ 
-    {
-        "repetition_penalty": 1.1, 
-        "temperature": 1.0, 
-        "top_p": 0.95,
-        "top_k": 50
-    }
-] * (model.channels - 1) 
-
 batch_size = 1
 
-messages = []
 save_dir = Path(f"inference_root_moss_tts_local_transformer_generation")
 save_dir.mkdir(exist_ok=True, parents=True)
 sample_idx = 0
@@ -240,7 +218,7 @@ with torch.no_grad():
         outputs = model.generate(
             input_ids=input_ids,
             attention_mask=attention_mask,
-            generation_config=generation_config
+            max_new_tokens=4096,
         )
 
         for message in processor.decode(outputs):
@@ -253,7 +231,7 @@ with torch.no_grad():
 ### 7.2 Continuation + Prefix Audio
 
 ```python
-import os
+import importlib.util
 from pathlib import Path
 import torch
 import torchaudio
@@ -265,30 +243,31 @@ torch.backends.cuda.enable_flash_sdp(True)
 torch.backends.cuda.enable_mem_efficient_sdp(True)
 torch.backends.cuda.enable_math_sdp(True)
 
-class DelayGenerationConfig(GenerationConfig):
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-        self.layers = kwargs.get("layers", [{} for _ in range(32)])
-        self.do_samples = kwargs.get("do_samples", None)
-        self.n_vq_for_inference = 32
-        
-def initial_config(tokenizer, model_name_or_path):
-    generation_config = DelayGenerationConfig.from_pretrained(model_name_or_path)
-    generation_config.pad_token_id = tokenizer.pad_token_id
-    generation_config.eos_token_id = 151653
-    generation_config.max_new_tokens = 1000000
-    generation_config.temperature = 1.0
-    generation_config.top_p = 0.95
-    generation_config.top_k = 100
-    generation_config.repetition_penalty = 1.1
-    generation_config.use_cache = True
-    generation_config.do_sample = False
-    return generation_config
-
-
-pretrained_model_name_or_path = "OpenMOSS-Team/MOSS-TTS"
+pretrained_model_name_or_path = "OpenMOSS-Team/MOSS-TTS-Local-Transformer"
 device = "cuda" if torch.cuda.is_available() else "cpu"
 dtype = torch.bfloat16 if device == "cuda" else torch.float32
+
+def resolve_attn_implementation() -> str:
+    # Prefer FlashAttention 2 when package + device conditions are met.
+    if (
+        device == "cuda"
+        and importlib.util.find_spec("flash_attn") is not None
+        and dtype in {torch.float16, torch.bfloat16}
+    ):
+        major, _ = torch.cuda.get_device_capability()
+        if major >= 8:
+            return "flash_attention_2"
+
+    # CUDA fallback: use PyTorch SDPA kernels.
+    if device == "cuda":
+        return "sdpa"
+
+    # CPU fallback.
+    return "eager"
+
+
+attn_implementation = resolve_attn_implementation()
+print(f"[INFO] Using attn_implementation={attn_implementation}")
 
 processor = AutoProcessor.from_pretrained(
     pretrained_model_name_or_path,
@@ -311,6 +290,7 @@ text_1 = """亲爱的你，
 """
 
 ref_text_1 = "太阳系八大行星之一。"
+# Use audio from ./assets/audio to avoid downloading from the cloud.
 ref_audio_1 = "https://speech-demo.oss-cn-shanghai.aliyuncs.com/moss_tts_demo/tts_readme_demo/reference_zh.wav"
 
 conversations = [
@@ -324,34 +304,13 @@ conversations = [
 model = AutoModel.from_pretrained(
     pretrained_model_name_or_path,
     trust_remote_code=True,
-    attn_implementation="sdpa",
+    attn_implementation=attn_implementation,
     torch_dtype=dtype,
 ).to(device)
 model.eval()
 
-generation_config = initial_config(processor.tokenizer, pretrained_model_name_or_path)
-generation_config.n_vq_for_inference = model.channels - 1
-generation_config.do_samples = [True] * model.channels
-generation_config.layers = [
-    {
-        "repetition_penalty": 1.0, 
-        "temperature": 1.5, 
-        "top_p": 1.0, 
-        "top_k": 50
-    }
-] + [ 
-    {
-        "repetition_penalty": 1.1, 
-        "temperature": 1.0, 
-        "top_p": 0.95,
-        "top_k": 50
-    }
-] * (model.channels - 1) 
-
-
 batch_size = 1
 
-messages = []
 save_dir = Path("inference_root_moss_tts_local_transformer_continuation")
 save_dir.mkdir(exist_ok=True, parents=True)
 sample_idx = 0
@@ -365,7 +324,7 @@ with torch.no_grad():
         outputs = model.generate(
             input_ids=input_ids,
             attention_mask=attention_mask,
-            generation_config=generation_config
+            max_new_tokens=4096,
         )
 
         for message in processor.decode(outputs):

@@ -616,6 +616,109 @@ class MossTTSDelayModel(MosiTTSPretrainedModel, CustomMixin):
     def can_generate(self):
         return True
 
+    def _build_generation_config(
+        self,
+        generation_config: Optional[GenerationConfig] = None,
+        max_new_tokens: Optional[int] = None,
+        text_temperature: Optional[float] = None,
+        text_top_p: Optional[float] = None,
+        text_top_k: Optional[int] = None,
+        text_repetition_penalty: Optional[float] = None,
+        audio_temperature: Optional[float] = None,
+        audio_top_p: Optional[float] = None,
+        audio_top_k: Optional[int] = None,
+        audio_repetition_penalty: Optional[float] = None,
+        n_vq_for_inference: Optional[int] = None,
+    ) -> GenerationConfig:
+        config = copy.deepcopy(generation_config or self.generation_config)
+
+        text_temperature = 1.5 if text_temperature is None else float(text_temperature)
+        text_top_p = 1.0 if text_top_p is None else float(text_top_p)
+        text_top_k = 50 if text_top_k is None else int(text_top_k)
+        text_repetition_penalty = 1.0 if text_repetition_penalty is None else float(text_repetition_penalty)
+        audio_temperature = 1.0 if audio_temperature is None else float(audio_temperature)
+        audio_top_p = 0.95 if audio_top_p is None else float(audio_top_p)
+        audio_top_k = 50 if audio_top_k is None else int(audio_top_k)
+        audio_repetition_penalty = 1.1 if audio_repetition_penalty is None else float(audio_repetition_penalty)
+
+        text_do_sample = text_temperature > 0
+        if not text_do_sample:
+            text_temperature = 1.0
+        audio_do_sample = audio_temperature > 0
+        if not audio_do_sample:
+            audio_temperature = 1.0
+
+        if max_new_tokens is not None:
+            config.max_new_tokens = int(max_new_tokens)
+        elif getattr(config, "max_new_tokens", None) is None:
+            config.max_new_tokens = 100000 # about 2.2 hours , can be overridden by user input, you can set to a smaller value for faster generation during debugging
+
+        if getattr(config, "pad_token_id", None) is None:
+            config.pad_token_id = self.config.pad_token_id
+        config.eos_token_id = self.config.audio_end_token_id
+        config.use_cache = True
+        config.do_sample = text_do_sample or audio_do_sample
+
+        resolved_n_vq = self.channels - 1 if n_vq_for_inference is None else int(n_vq_for_inference)
+        resolved_n_vq = max(1, min(self.channels - 1, resolved_n_vq))
+        config.n_vq_for_inference = resolved_n_vq
+        config.do_samples = [text_do_sample] + [audio_do_sample] * (self.channels - 1)
+        config.layers = [
+            {
+                "repetition_penalty": text_repetition_penalty,
+                "temperature": text_temperature,
+                "top_p": text_top_p,
+                "top_k": text_top_k,
+            }
+        ] + [
+            {
+                "repetition_penalty": audio_repetition_penalty,
+                "temperature": audio_temperature,
+                "top_p": audio_top_p,
+                "top_k": audio_top_k,
+            }
+            for _ in range(self.channels - 1)
+        ]
+        return config
+
+    @torch.inference_mode()
+    def generate(
+        self,
+        input_ids: torch.LongTensor,
+        attention_mask: Optional[torch.Tensor] = None,
+        generation_config: Optional[GenerationConfig] = None,
+        max_new_tokens: Optional[int] = None,
+        text_temperature: Optional[float] = None,
+        text_top_p: Optional[float] = None,
+        text_top_k: Optional[int] = None,
+        text_repetition_penalty: Optional[int] = None,
+        audio_temperature: Optional[float] = None,
+        audio_top_p: Optional[float] = None,
+        audio_top_k: Optional[int] = None,
+        audio_repetition_penalty: Optional[float] = None,
+        n_vq_for_inference: Optional[int] = None,
+        **kwargs,
+    ):
+        resolved_generation_config = self._build_generation_config(
+            generation_config=generation_config,
+            max_new_tokens=max_new_tokens,
+            text_temperature=text_temperature,
+            text_top_p=text_top_p,
+            text_top_k=text_top_k,
+            text_repetition_penalty=text_repetition_penalty,
+            audio_temperature=audio_temperature,
+            audio_top_p=audio_top_p,
+            audio_top_k=audio_top_k,
+            audio_repetition_penalty=audio_repetition_penalty,
+            n_vq_for_inference=n_vq_for_inference,
+        )
+        return super().generate(
+            input_ids=input_ids,
+            attention_mask=attention_mask,
+            generation_config=resolved_generation_config,
+            **kwargs,
+        )
+
     # def tie_weights(self):
     #     ...
         # for i in range(self.config.channels):

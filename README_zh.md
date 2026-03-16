@@ -34,7 +34,9 @@ MOSS‑TTS 家族是由 [MOSI.AI](https://mosi.cn/#hero) 与 [OpenMOSS 团队](h
 
 <a id="news"></a>
 ## 新闻
-* 2026.3.15：🚀 在配套仓库 [`expectqwq/llama.cpp`](https://github.com/expectqwq/llama.cpp) 中新增了 first-class MOSS-TTS `llama.cpp` 实现，提供 GGUF backbone 推理与 ONNX 音频编解码器解码的端到端可运行链路。可从 [first-class e2e 指南](https://github.com/expectqwq/llama.cpp/blob/master/docs/moss-tts-firstclass-e2e_zh.md) 开始。
+* 2026.3.15：🚀 在配套仓库 [`OpenMOSS/llama.cpp`](https://github.com/OpenMOSS/llama.cpp/tree/moss-tts-firstclass) 中新增了 first-class MOSS-TTS `llama.cpp` 实现，提供 GGUF backbone 推理与 ONNX 音频编解码器解码的端到端可运行链路。可从 [first-class e2e 指南](https://github.com/OpenMOSS/llama.cpp/blob/moss-tts-firstclass/docs/moss-tts-firstclass-e2e_zh.md) 开始。
+* 2026.3.12：🚀 新增面向 `MossTTSDelay` 架构的 SGLang 后端支持，可用于 MOSS-TTS（Delay）和 MOSS-SoundEffect 的高效推理，生成吞吐可提升约 **3 倍**！
+* 2026.3.11：📘 新增 MossTTSDelay 架构微调教程，适用于 MOSS-TTS（Delay）、MOSS-TTSD、MOSS-VoiceGenerator 和 MOSS-SoundEffect！
 * 2026.3.10：⚡️ 大幅优化了 llama.cpp 推理管线的显存占用。现在 8B 模型可以运行在 8GB 显存的 GPU 上！
 * 2026.3.4：新增 **无 PyTorch 推理** 支持 — 通过 [llama.cpp](https://github.com/ggerganov/llama.cpp) + ONNX Runtime 实现端侧轻量部署。量化 GGUF 权重发布于 [`OpenMOSS-Team/MOSS-TTS-GGUF`](https://huggingface.co/OpenMOSS-Team/MOSS-TTS-GGUF)，ONNX 音频编解码器发布于 [`OpenMOSS-Team/MOSS-Audio-Tokenizer-ONNX`](https://huggingface.co/OpenMOSS-Team/MOSS-Audio-Tokenizer-ONNX)。详见 [llama.cpp 后端](#llamacpp-后端无-pytorch-推理)。
 * 2026.3.4：🎉 我们在 🦞 龙虾 的 [ClawHub](https://clawhub.ai) 平台上架了 MOSS-TTS skills：[feishu-voice-tts](https://clawhub.ai/helloeveryworlds/feishu-voice-tts) 与 [moss-tts-voice](https://clawhub.ai/luogao2333/moss-tts-voice)。
@@ -60,6 +62,7 @@ MOSS‑TTS 家族是由 [MOSI.AI](https://mosi.cn/#hero) 与 [OpenMOSS 团队](h
   - [基础用法](#moss-tts-basic-usage)
   - [微调](#fine-tuning)
 - [llama.cpp 后端（无 PyTorch 推理）](#llamacpp-后端无-pytorch-推理)
+- [SGLang 后端（加速推理）](#sglang-后端加速推理)
 - [评测](#evaluation)
   - [MOSS-TTS 评测](#eval-moss-tts)
   - [MOSS-TTSD 评测](#eval-moss-ttsd)
@@ -82,7 +85,7 @@ MOSS‑TTS 家族是由 [MOSI.AI](https://mosi.cn/#hero) 与 [OpenMOSS 团队](h
 - **MOSS‑TTS**：MOSS‑TTS 是家族中的旗舰量产级 TTS 基础模型，**核心能力是高保真以及最优性能的零样本语音克隆**，支持**长文本长语音生成**、**拼音、音标与时长精细控制**，以及**多语种/中英混合合成**。它可作为大规模旁白、配音和语音产品的核心底座。
 - **MOSS‑TTSD**：MOSS‑TTSD 是对话语音生成模型，用于生成高表现力、多说话人、超长连续对话的音频。本次我们更新了全新的**v1.0版本**，相比于0.7版本，它在音色相似度，说话人切换准确率，词错误率等**客观指标上取得了业界最优的性能**，在竞技场主观评测中，也**战胜了豆包、Gemini2.5-pro**等顶尖闭源模型。详情请访问 [MOSS-TTSD 仓库](https://github.com/OpenMOSS/MOSS-TTSD)。
 - **MOSS‑VoiceGenerator**：MOSS‑VoiceGenerator 是开源音色设计模型，可从文本风格指令直接生成多样的说话人音色或风格，**无需参考音频**。它统一音色设计、风格控制与内容合成，可独立创作，也可作为下游 TTS 的音色设计层。模型性能在**竞技场评分上超过了其余等顶尖音色设计模型**。
-- **MOSS‑TTS‑Realtime**：MOSS‑TTS‑Realtime 是面向实时语音智能体的多轮上下文感知实时 TTS 模型。它结合多轮对话中的文本与历史语音信号进行低时延增量合成，使多轮回复保持连贯、自然且音色一致。**非常适合搭配文本模型构建低时延语音智能体**。
+- **MOSS‑TTS‑Realtime**：MOSS‑TTS‑Realtime 是面向实时语音智能体的多轮上下文感知实时 TTS 模型。它结合多轮对话中的文本与历史语音信号进行低时延增量合成，使多轮回复保持连贯、自然且音色一致。**非常适合搭配文本模型构建低时延语音智能体**。MOSS‑TTS‑Realtime 的 TTFB（Time To First Byte）达到180ms，$T_{\text{LLM-first-sentence}} + T_{\text{MOSS-TTS-Realtime-TTFB}}$ 整体为377ms。
 - **MOSS‑SoundEffect**：MOSS‑SoundEffect 是面向内容制作的**音效生成**模型，具备广泛类别覆盖与可控时长能力。它能根据文本指令生成自然环境、城市场景、生物、人类动作与类音乐片段等音频，适用于影视、游戏、交互体验和数据合成。
 
 <a id="architecture"></a>
@@ -347,9 +350,9 @@ with torch.no_grad():
 
 MOSS-TTS 支持使用 [llama.cpp](https://github.com/ggerganov/llama.cpp) 运行 Qwen3 backbone，配合 ONNX Runtime / TensorRT 运行音频编解码器，实现 **完全无 PyTorch 依赖** 的轻量端侧推理。
 
-我们也在配套仓库 [`expectqwq/llama.cpp`](https://github.com/expectqwq/llama.cpp) 中维护了一条更新的 first-class MOSS-TTS 链路。与下方介绍的 legacy bridge 后端不同，这条链路把多通道 embedding、多输出头和 delay-pattern decode 直接放进了 `llama.cpp`。
+我们也在配套仓库 [`OpenMOSS/llama.cpp`](https://github.com/OpenMOSS/llama.cpp/tree/moss-tts-firstclass) 中维护了一条更新的 first-class MOSS-TTS 链路。与下方介绍的 legacy bridge 后端不同，这条链路把多通道 embedding、多输出头和 delay-pattern decode 直接放进了 `llama.cpp`。
 
-如需使用这条链路，请从 [first-class e2e 指南](https://github.com/expectqwq/llama.cpp/blob/master/docs/moss-tts-firstclass-e2e_zh.md) 开始。
+如需使用这条链路，请从 [first-class e2e 指南](https://github.com/OpenMOSS/llama.cpp/blob/moss-tts-firstclass/docs/moss-tts-firstclass-e2e_zh.md) 开始。
 
 ### 快速开始
 
@@ -414,10 +417,92 @@ python -m moss_tts_delay.llama_cpp \
 
 完整文档请查看 [moss_tts_delay/llama_cpp/README.md](moss_tts_delay/llama_cpp/README.md)。
 
+## SGLang 后端（加速推理）
+
+MOSS-TTS（Delay）支持使用 OpenMOSS 深度扩展的 [SGLang](https://github.com/OpenMOSS/sglang) 运行融合后的 MOSS-TTS 与 MOSS-Audio-Tokenizer 模型，实现面向音频生成的 **高效推理**。
+
+### 快速开始
+
+```bash
+# 1. 克隆 SGLang 仓库
+git clone https://github.com/OpenMOSS/sglang.git
+
+# 2. 安装 SGLang
+pip install -e ./sglang/python[all]
+
+# 3. (可选) 解决 SGLang 的 CuDNN 兼容性报错
+#    RuntimeError: CRITICAL WARNING: PyTorch 2.9.1 & CuDNN Compatibility Issue Detected
+pip install nvidia-cudnn-cu12==9.16.0.29
+
+# 4. 下载模型与音频编解码器权重
+huggingface-cli download OpenMOSS-Team/MOSS-TTS --local-dir weights/MOSS-TTS
+huggingface-cli download OpenMOSS-Team/MOSS-Audio-Tokenizer --local-dir weights/MOSS-Audio-Tokenizer
+
+# 5. 融合模型与音频编解码器权重
+python scripts/fuse_moss_tts_delay_with_codec.py --model-path weights/MOSS-TTS --codec-model-path weights/MOSS-Audio-Tokenizer --save-path weights/MOSS-TTS-Delay-With-Codec
+
+# 6. 启动服务
+sglang serve --model-path weights/MOSS-TTS-Delay-With-Codec --delay-pattern --trust-remote-code
+```
+
+> 如果融合输出目录已存在，可以在命令中追加 `--overwrite` 直接覆盖，或在脚本提示后输入字符确认覆盖。
+
+> **注意：** 首次启动服务后的第一次请求会触发较长时间的编译，这不是故障，请耐心等待。
+
+### 请求与返回
+
+#### MOSS-TTS (Delay)
+
+```bash
+curl -X POST http://localhost:30000/generate \
+  -H "Content-Type: application/json" \
+  -d '{
+    "text": "新增 SGLang 后端支持，实现高效推理。",
+    "audio_data": "https://cdn.jsdelivr.net/gh/OpenMOSS/MOSS-TTSD@main/legacy/v0.7/examples/zh_spk1_moon.wav",
+    "sampling_params": {
+      "max_new_tokens": 512,
+      "temperature": 1.7,
+      "top_p": 0.8,
+      "top_k": 25
+    }
+  }'
+```
+
+- `text` 表示待合成的文本内容；可在前缀加入 `${token:25}` 进行 token 控制，例如 `${token:25}你好 世界`
+- `audio_data` 表示可选的参考音频；不传入时会生成随机音色的音频，也可以是 `<path-to-audio-file>` 或 `data:audio/wav;base64,{b64_audio}`，其中 `b64_audio` 为 wav 文件的 base64 字符串。
+
+#### MOSS-SoundEffect
+
+```bash
+curl -X POST http://localhost:30000/generate \
+  -H "Content-Type: application/json" \
+  -d '{
+    "text": "${token:125}${ambient_sound:a sports car roaring past on the highway.}",
+    "sampling_params": {
+      "max_new_tokens": 512,
+      "temperature": 1.5,
+      "top_p": 0.6,
+      "top_k": 50
+    }
+  }'
+```
+
+- `text` 中只能包含 `${token:125}` 和 `${ambient_sound:...}` 这两个字段，其中 `${ambient_sound:...}` 后填写音效的文字描述。
+- 对于 MOSS-SoundEffect，建议使用 `${token:125}`，生成会更稳定。
+- 不要传 `audio_data`，否则模型可能会 OOD。
+
+#### 返回
+
+```json
+{"text": "<wav-base64>", "...": "..."}
+```
+
+HTTP 响应为 JSON 对象，可能包含多个字段；其中 `.text` 字段存放生成音频的 wav base64 字符串。通常只需提取该字段并做 base64 解码；例如将响应保存为 `response.json` 后，可执行 `jq -r '.text' response.json | base64 -d -i > output.wav`。
+
 <a id="evaluation"></a>
 ## 评测
 
-本节总结 MOSS‑TTS 与 MOSS‑VoiceGenerator 的 **家族级评测亮点**。完整细节请参见各模型的 model card。
+本节总结 MOSS‑TTS、MOSS‑TTSD 与 MOSS‑VoiceGenerator 的 **家族级评测亮点**。完整细节请参见各模型的 model card。
 
 <a id="eval-moss-tts"></a>
 ### MOSS‑TTS 评测
@@ -427,13 +512,13 @@ MOSS‑TTS 在开源零样本 TTS 基准 `Seed‑TTS‑eval` 上取得当前最�
 |---|---:|:---:|---:|---:|---:|---:|
 | DiTAR | 0.6B | ❌ | 1.69 | 73.5 | 1.02 | 75.3 |
 | FishAudio‑S1 | 4B | ❌ | 1.72 | 62.57 | 1.22 | 72.1 |
+| CosyVoice3 | 1.5B | ❌ | 2.22 | 72 | 1.12 | 78.1 |
 | Seed‑TTS |  | ❌ | 2.25 | 76.2 | 1.12 | 79.6 |
 | MiniMax‑Speech |  | ❌ | 1.65 | 69.2 | 0.83 | 78.3 |
 |  |  |  |  |  |  |  |
 | CosyVoice | 0.3B | ✅ | 4.29 | 60.9 | 3.63 | 72.3 |
 | CosyVoice2 | 0.5B | ✅ | 3.09 | 65.9 | 1.38 | 75.7 |
 | CosyVoice3 | 0.5B | ✅ | 2.02 | 71.8 | 1.16 | 78 |
-| CosyVoice3 | 1.5B | ✅ | 2.22 | 72 | 1.12 | 78.1 |
 | F5‑TTS | 0.3B | ✅ | 2 | 67 | 1.53 | 76 |
 | SparkTTS | 0.5B | ✅ | 3.14 | 57.3 | 1.54 | 66 |
 | FireRedTTS | 0.5B | ✅ | 3.82 | 46 | 1.51 | 63.5 |
@@ -446,6 +531,8 @@ MOSS‑TTS 在开源零样本 TTS 基准 `Seed‑TTS‑eval` 上取得当前最�
 | VoxCPM | 0.5B | ✅ | 1.85 | 72.9 | **0.93** | 77.2 |
 | Qwen3‑TTS | 0.6B | ✅ | 1.68 | 70.39 | 1.23 | 76.4 |
 | Qwen3‑TTS | 1.7B | ✅ | **1.5** | 71.45 | 1.33 | 76.72 |
+| GLM-TTS | 1.5B | ✅ | 2.23 | 67.2 | 1.03 | 76.1 |
+| GLM-TTS-RL | 1.5B | ✅ | 1.91 | 68.1 | 0.89 | 76.4 |
 |  |  |  |  |  |  |  |
 | **MossTTSDelay** | **8B** | ✅ | 1.79 | 71.46 | 1.32 | 77.05 |
 | **MossTTSLocal** | **1.7B** | ✅ | 1.85 | **73.42** | 1.2 | **78.82** |
@@ -491,6 +578,21 @@ MOSS‑VoiceGenerator 在 **整体偏好**、**指令遵循** 与 **自然度** 
   <img src="./assets/moss_voice_generator_winrate.png" width="70%" />
 </p>
 
+<a id="eval-moss-tts-realtime"></a>
+### MOSS‑TTS-Realtime 评测
+我们评估了MOSS-TTS-Realtime的TTFB (Time To First Byte)和RTF(Real-Time Factor)。
+
+注意：在测试期间启用了SDPA + torch.compile。以下结果在单个L20 GPU上进行了测试。
+
+| Model | TTFB (ms) | RTF |
+|-------------|-----------|-----|
+| **MOSS-TTS-Realtime** | 180（After warm up）| 0.51 |
+
+We deployed Qwen3.5-9B using vLLM to measure $T_{\text{LLM-first-sentence}}$. The time required to generate 12 tokens (the TTS prefill length) was 197 ms.
+
+$T_{\text{LLM-first-sentence}} + T_{\text{MOSS-TTS-Realtime-TTFB}} = 197ms + 180ms = 377ms$
+
+
 <a id="audio-tokenizer"></a>
 ## 语音编解码器
 
@@ -525,6 +627,11 @@ MOSS‑VoiceGenerator 在 **整体偏好**、**指令遵循** 与 **自然度** 
   <img src="./assets/evaluation_moss_audio_tokenizer.png" alt="LibriSpeech objective metrics for audio tokenizers" width="90%" />
 </p>
 
+## 📚 更多信息
+### 🌟 社区项目
+MOSS-TTS 社区正在快速发展，我们也很高兴展示一些由社区成员构建的优秀项目与功能：
+- **[ComfyUI-MOSS-TTS](https://github.com/richservo/comfyui-moss-tts)**：面向 ComfyUI 的 MOSS-TTS 扩展。
+- **[MOSS-TTS-OpenAI](https://github.com/dasilva333/moss-tts-openai)**：兼容 OpenAI 接口的 MOSS-TTS API。
 
 ## 证书
 

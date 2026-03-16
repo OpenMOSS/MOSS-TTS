@@ -32,6 +32,18 @@ By tightly integrating multi-turn context modeling with low-latency streaming sy
 |---|---:|---:|---:|---:|---:|
 | **MOSS-TTS-Realtime** | 0.8 | 0.6 | 30 | 1.1 | 50 |
 
+
+### 1.4 TTFB（Time To First Byte） and RTF（Real-Time Factor）
+Note: SDPA + torch.compile were enabled during testing. The following results are tested on a single L20 GPU. 
+
+| Model | TTFB (ms) | RTF |
+|-------------|-----------|-----|
+| **MOSS-TTS-Realtime** | 180（After warm up）| 0.51 |
+
+We deployed Qwen3.5-9B using vLLM to measure $T_{\text{LLM-first-sentence}}$. The time required to generate 12 tokens (the TTS prefill length) was 197 ms.
+
+$T_{\text{LLM-first-sentence}} + T_{\text{MOSS-TTS-Realtime-TTFB}} = 197ms + 180ms = 377ms$
+
 ## 2. Quickstart
 
 ### Environment Setup
@@ -63,7 +75,8 @@ uv pip install --torch-backend cu128 -e .
 cd moss_tts_realtime
 ```
 
-### Basic Usage (Non streaming)
+### Basic Usage (Non streaming) 
+Note: It is recommended to use SDPA + torch.compile during inference, as this can provide faster inference speed.
 
 ```python
 import importlib.util
@@ -133,8 +146,24 @@ for i, generated_tokens, in enumerate(result):
 
 ### Launch the Gradio streaming demo (recommended)
 You can use streaming output in Gradio with the following usage.
+
+Note: It is recommended to use SDPA + torch.compile during inference, as this can provide faster inference speed.
+
 ```bash
 python3 app.py
+```
+
+### Launch MOSS-TTS-Realtime Fastapi Server
+Note: Currently only **batch size = 1** is supported.
+
+You can start a TTS server with the following command:
+```bash
+python3 fast_api.py
+```
+
+Then you can call it via the method in the following code:
+```bash
+python3 tts_client.py
 ```
 
 ### Single-turn Streaming Usage

@@ -1157,10 +1157,10 @@ def _build_demo(
 
         with gr.Row():
             with gr.Column():
-                user_text = gr.Textbox(label="User Text(optional)", lines=2)
-                assistant_text = gr.Textbox(label="Assistant Text", lines=6)
                 prompt_audio = gr.Audio(label="Prompt WAV (optional)", type="filepath")
+                assistant_text = gr.Textbox(label="Assistant Text", lines=3)
                 user_audio = gr.Audio(label="User WAV (optional)", type="filepath")
+                user_text = gr.Textbox(label="User Text (optional)", lines=3)
                 use_default_prompt = gr.Checkbox(label="Use Default Prompt WAV (fallback)", value=False)
                 use_default_user = gr.Checkbox(label="Use Default User WAV (fallback)", value=False)
 
@@ -1179,9 +1179,9 @@ def _build_demo(
                 with gr.Accordion("Streaming Options", open=False):
                     stream_text_chunk_tokens = gr.Slider(1, 64, value=12, step=1, label="Text Chunk Tokens")
                     stream_input_delay = gr.Slider(0.0, 0.5, value=0.0, step=0.05, label="Input Delay (s)")
-                    stream_decode_chunk_frames = gr.Slider(1, 20, value=12, step=1, label="Decode Chunk Frames")
+                    stream_decode_chunk_frames = gr.Slider(1, 20, value=6, step=1, label="Decode Chunk Frames")
                     stream_decode_overlap_frames = gr.Slider(0, 10, value=0, step=1, label="Decode Overlap Frames")
-                    chunk_duration = gr.Slider(0.01, 1.0, value=0.24, step=0.01, label="Codec Chunk Duration (s)")
+                    chunk_duration = gr.Slider(0.08, 4.0, value=0.96, step=0.08, label="Codec Chunk Duration (s)")
                     stream_prebuffer_seconds = gr.Slider(0.0, 20.0, value=0.0, step=0.05, label="Initial Buffer (s)")
 
                 run_btn = gr.Button(
@@ -1350,11 +1350,11 @@ def main():
     parser.add_argument(
         "--attn_implementation",
         type=str,
-        default="sdpa",
+        default="sdpa", # It is recommended to use sdpa, which will also use torch.compile
         choices=["sdpa", "flash_attention_2", "eager", "none"],
     )
     parser.add_argument("--host", type=str, default="0.0.0.0")
-    parser.add_argument("--port", type=int, default=8082)
+    parser.add_argument("--port", type=int, default=18082)
     parser.add_argument("--share", action="store_true")
     args = parser.parse_args()
 
