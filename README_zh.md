@@ -34,7 +34,8 @@ MOSS‑TTS 家族是由 [MOSI.AI](https://mosi.cn/#hero) 与 [OpenMOSS 团队](h
 
 <a id="news"></a>
 ## 新闻
-* 2026.3.15：🚀 在配套仓库 [`OpenMOSS/llama.cpp`](https://github.com/OpenMOSS/llama.cpp/tree/moss-tts-firstclass) 中新增了 first-class MOSS-TTS `llama.cpp` 实现，提供 GGUF backbone 推理与 ONNX 音频编解码器解码的端到端可运行链路。可从 [first-class e2e 指南](https://github.com/OpenMOSS/llama.cpp/blob/moss-tts-firstclass/docs/moss-tts-firstclass-e2e_zh.md) 开始。
+* 2026.3.18：🚀 在配套仓库 [`OpenMOSS/llama.cpp`](https://github.com/OpenMOSS/llama.cpp/tree/moss-tts-firstclass) 中新增了 first-class MOSS-TTS `llama.cpp` 实现，提供 GGUF backbone 推理与 ONNX 音频编解码器解码的端到端可运行链路。可从 [first-class e2e 指南](https://github.com/OpenMOSS/llama.cpp/blob/moss-tts-firstclass/docs/moss-tts-firstclass-e2e_zh.md) 开始。
+* 2026.3.16：📘 新增 MossTTSLocal 架构微调教程，适用于 MOSS-TTS-Local-Transformer！
 * 2026.3.12：🚀 新增面向 `MossTTSDelay` 架构的 SGLang 后端支持，可用于 MOSS-TTS（Delay）和 MOSS-SoundEffect 的高效推理，生成吞吐可提升约 **3 倍**！
 * 2026.3.11：📘 新增 MossTTSDelay 架构微调教程，适用于 MOSS-TTS（Delay）、MOSS-TTSD、MOSS-VoiceGenerator 和 MOSS-SoundEffect！
 * 2026.3.10：⚡️ 大幅优化了 llama.cpp 推理管线的显存占用。现在 8B 模型可以运行在 8GB 显存的 GPU 上！
@@ -343,6 +344,7 @@ with torch.no_grad():
 当前已提供：
 
 - `MossTTSDelay` / `OpenMOSS-Team/MOSS-TTS`：见 [moss_tts_delay/finetuning/README_zh.md](moss_tts_delay/finetuning/README_zh.md)
+- `MossTTSLocal` / `OpenMOSS-Team/MOSS-TTS-Local-Transformer`：见 [moss_tts_local/finetuning/README_zh.md](moss_tts_local/finetuning/README_zh.md)
 
 后续其余架构的微调教程也会分别补充到对应目录下。
 
@@ -632,6 +634,7 @@ $T_{\text{LLM-first-sentence}} + T_{\text{MOSS-TTS-Realtime-TTFB}} = 197ms + 180
 MOSS-TTS 社区正在快速发展，我们也很高兴展示一些由社区成员构建的优秀项目与功能：
 - **[ComfyUI-MOSS-TTS](https://github.com/richservo/comfyui-moss-tts)**：面向 ComfyUI 的 MOSS-TTS 扩展。
 - **[MOSS-TTS-OpenAI](https://github.com/dasilva333/moss-tts-openai)**：兼容 OpenAI 接口的 MOSS-TTS API。
+- **[AnyPod](https://github.com/rulerman/AnyPod)**：以 MOSS-TTS/MOSS-TTSD 作为后端的播客生成工具。
 
 ## 证书
 

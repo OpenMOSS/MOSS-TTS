@@ -245,7 +245,7 @@ class MossTTSLocalTransformer(Qwen3Model):
             "past_key_values": past_key_values,
             "position_ids": position_ids,
         }
-        causal_mask = create_causal_mask(**mask_kwargs),
+        causal_mask = create_causal_mask(**mask_kwargs)
 
 
         hidden_states = inputs_embeds
@@ -505,6 +505,7 @@ class MosiTTSModel(MosiTTSPretrainedModel):
 
         self.language_model = Qwen3Model(config.language_config)
         self.post_init()
+        self.language_model.embed_tokens.requires_grad_(False)
 
     def get_input_embeddings(self):
         return self.embedding_list[0]
@@ -512,14 +513,23 @@ class MosiTTSModel(MosiTTSPretrainedModel):
     def set_input_embeddings(self, value: nn.Embedding):
         self.embedding_list[0] = value
 
-    def _prepare_multi_modal_inputs(self, input_ids: torch.LongTensor, n_vq_for_inference: int, **kwargs) -> torch.FloatTensor:
+    def _prepare_multi_modal_inputs(
+        self,
+        input_ids: torch.LongTensor,
+        n_vq_for_inference: Optional[int] = None,
+        **kwargs,
+    ) -> torch.FloatTensor:
         """
         Prepares multi-modal embeddings from input_ids of shape (batch_size, channels, sequence_length).
         For channel 0: text + speech tokens, for channels 1 to channels-1: speech tokens padded with speech_pad_token.
         """
         batch_size, seq_length, channels = input_ids.shape
         if channels != self.channels:
-            raise ValueError(f"Expected {self.config.channels} channels, got {channels}")
+            raise ValueError(f"Expected {self.channels} channels, got {channels}")
+
+        if n_vq_for_inference is None:
+            n_vq_for_inference = self.channels - 1
+        n_vq_for_inference = max(1, min(self.channels - 1, int(n_vq_for_inference)))
 
         inputs_embeds = torch.zeros(batch_size, seq_length, self.config.hidden_size, device=input_ids.device, dtype=self.embedding_list[0].weight.dtype)
         for i in range(min(channels, 1 + n_vq_for_inference)):
@@ -566,7 +576,7 @@ class MosiTTSModel(MosiTTSPretrainedModel):
 
 
 class MossTTSDelayModel(MosiTTSPretrainedModel, CustomMixin):
-    _tied_weights_keys = []
+    _tied_weights_keys = None
     _tp_plan = {"lm_head": "colwise_rep"}
     _pp_plan = {"lm_head": (["hidden_states"], ["logits"])}
 
@@ -575,7 +585,6 @@ class MossTTSDelayModel(MosiTTSPretrainedModel, CustomMixin):
         self.model = MosiTTSModel(config)
         self.channels = 1 + config.n_vq
         self.weights = [1 for _ in range(self.channels)]
-        self._tied_weights_keys = [f"lm_heads.{i}.weight" for i in range(self.channels)]
         self.vocab_size = config.vocab_size
 
         local_transformer_config = copy.deepcopy(config.language_config)
@@ -609,9 +618,23 @@ class MossTTSDelayModel(MosiTTSPretrainedModel, CustomMixin):
         for _ in range(1, self.channels):
             self.lm_heads.append(nn.Linear(config.hidden_size, 1 + config.audio_vocab_size, bias=False))
         self.post_init()
+        self._freeze_unused_qwen_embeddings()
+        self.register_load_state_dict_post_hook(self._freeze_unused_qwen_embeddings_post_load)
+
+    @classmethod
+    def from_pretrained(cls, *args, **kwargs):
+        model = super().from_pretrained(*args, **kwargs)
+        model._freeze_unused_qwen_embeddings()
+        return model
 
     def get_input_embeddings(self):
         return self.model.embedding_list[0]
+
+    def _freeze_unused_qwen_embeddings(self) -> None:
+        self.model.language_model.embed_tokens.requires_grad_(False)
+
+    def _freeze_unused_qwen_embeddings_post_load(self, module, incompatible_keys) -> None:
+        module._freeze_unused_qwen_embeddings()
 
     def can_generate(self):
         return True
@@ -744,7 +767,7 @@ class MossTTSDelayModel(MosiTTSPretrainedModel, CustomMixin):
 
     def _prepare_shifted_audio_inputs(self, label_ids): # (B, T, 1 + Nq) 可能有 -100
         text_and_audio_label_embed_list = [] # Nq * (1, T, B, D)
-        for i in range(0, self.local_transformer_config.channels - 1):
+        for i in range(self.channels - 1):
             text_and_audio_label_embed_list.append(
                 moss_tts_masked_embedding(self.model.embedding_list[i], label_ids[:, :, i]).unsqueeze(0).transpose(1, 2) # (B, T) -> (B, T, D) -> (1, B, T, D) -> (1, T, B, D)
             ) # (1, T, B, D)
@@ -760,6 +783,7 @@ class MossTTSDelayModel(MosiTTSPretrainedModel, CustomMixin):
         past_key_values: Optional[Union[Cache, List[torch.FloatTensor]]] = None,
         inputs_embeds: Optional[torch.FloatTensor] = None,
         labels: Optional[torch.LongTensor] = None, # (B, T, 1 + Nq), TODO labels 为 input_ids shift 一位的结果
+        channelwise_loss_weight: Optional[List[float]] = None,
         use_cache: Optional[bool] = None,
         output_attentions: Optional[bool] = None,
         output_hidden_states: Optional[bool] = None,
@@ -818,22 +842,29 @@ class MossTTSDelayModel(MosiTTSPretrainedModel, CustomMixin):
             loss_all = torch.empty(self.channels, device=device) # (1 + Nq)
 
             for i in range(self.channels):
-                vocab_size = self.config.vocab_size if i == 0 else self.config.audio_vocab_size
+                vocab_size = self.config.vocab_size if i == 0 else (1 + self.config.audio_vocab_size)
                 loss_all[i] = ForCausalLMLoss(logits_all[i], labels[..., i], vocab_size, shift_labels=labels[..., i]) # (B, T, V), (B, T) => (1, )
-            normalized_weights = [weight_i / sum(self.weights) for weight_i in self.weights] # (1+Nq, )
+            effective_weights = channelwise_loss_weight if channelwise_loss_weight is not None else self.weights
+            if len(effective_weights) != self.channels:
+                raise ValueError(
+                    f"`channelwise_loss_weight` length {len(effective_weights)} != {self.channels}."
+                )
+            total_weight = float(sum(effective_weights))
+            if total_weight <= 0:
+                raise ValueError("`channelwise_loss_weight` must sum to a positive value.")
+            normalized_weights = [float(weight_i) / total_weight for weight_i in effective_weights] # (1+Nq, )
 
             total_loss = 0
             for w, loss in zip(normalized_weights, loss_all):
                 total_loss += w * loss
         else:
             total_loss = None
-            loss_all = None,
-            logits_all = [None]
+            loss_all = None
+            logits_all = [None] * self.channels
 
-        assert return_dict
         if not return_dict:
             output = (logits_all,) + outputs[1:]
-            return (total_loss, loss_all, ) + output if loss is not None else output
+            return (total_loss, loss_all) + output if total_loss is not None else output
 
         return MosiTTSOutputWithPast(
             loss=total_loss,
