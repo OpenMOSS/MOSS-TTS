@@ -96,7 +96,9 @@ def multinomial(probs: np.ndarray) -> np.ndarray:
     N = probs.shape[0]
     cum = np.cumsum(probs, axis=-1)
     r = np.random.random(N)[:, None]
-    return (cum < r).sum(axis=-1).astype(np.int64)
+    # Clamp to valid range: float32 cumsum may not reach 1.0 exactly,
+    # so r > cumsum[-1] would produce an out-of-bounds index.
+    return np.minimum((cum < r).sum(axis=-1), probs.shape[-1] - 1).astype(np.int64)
 
 
 def sample_token(
