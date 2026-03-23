@@ -814,7 +814,7 @@ class AudioStreamDecoder:
             tokens = tokens.to(device)
         tokens_t = tokens.permute(1, 0)
         decode_kwargs = dict(self.decode_kwargs) if self.decode_kwargs else {}
-        decoded = self.codec.decode(tokens_t, chunk_duration=self.decode_chunk_duration, **decode_kwargs)
+        decoded = self.codec.decode(tokens_t, chunk_duration=self.decode_chunk_duration)
         if isinstance(decoded, dict):
             wav = decoded["audio"][0]
         else:

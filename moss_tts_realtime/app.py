@@ -367,7 +367,6 @@ def _build_frame_decoder(
         codec,
         chunk_frames=chunk_frames,
         overlap_frames=overlap_frames,
-        decode_kwargs={"chunk_duration": -1},
         device=device,
     )
     return AudioFrameDecoder(
