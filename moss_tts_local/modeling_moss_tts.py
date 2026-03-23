@@ -11,7 +11,7 @@ from transformers.modeling_utils import ALL_ATTENTION_FUNCTIONS
 from transformers.utils import ModelOutput
 from transformers.cache_utils import Cache
 from typing import Optional, List, Tuple, Union
-from transformers.loss.loss_utils import ForCausalLMLoss
+from torch.nn import CrossEntropyLoss
 from transformers import PreTrainedModel, GenerationMixin
 from transformers.generation.streamers import BaseStreamer
 from transformers.models.qwen3.modeling_qwen3 import Qwen3Model, Qwen3Attention, eager_attention_forward
@@ -843,7 +843,8 @@ class MossTTSDelayModel(MosiTTSPretrainedModel, CustomMixin):
 
             for i in range(self.channels):
                 vocab_size = self.config.vocab_size if i == 0 else (1 + self.config.audio_vocab_size)
-                loss_all[i] = ForCausalLMLoss(logits_all[i], labels[..., i], vocab_size, shift_labels=labels[..., i]) # (B, T, V), (B, T) => (1, )
+                loss_fct = CrossEntropyLoss(ignore_index=-100)
+                loss_all[i] = loss_fct(logits_all[i].view(-1, vocab_size), labels[..., i].reshape(-1))
             effective_weights = channelwise_loss_weight if channelwise_loss_weight is not None else self.weights
             if len(effective_weights) != self.channels:
                 raise ValueError(
