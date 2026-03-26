@@ -23,6 +23,16 @@ The dataset is available at: [NbAiLab/NST](https://huggingface.co/datasets/NbAiL
 | Weight decay | 0.01 |
 | Max grad norm | 0.5 |
 
+## Model Weights
+
+The released LoRA adapter weights are available on Hugging Face:
+
+[ToSee-Norway/MOSS-TTS-Norwegian-LoRA](https://huggingface.co/ToSee-Norway/MOSS-TTS-Norwegian-LoRA)
+
+```bash
+huggingface-cli download ToSee-Norway/MOSS-TTS-Norwegian-LoRA --local-dir weights/MOSS-TTS-Norwegian-LoRA
+```
+
 ## Files
 
 - `train_lora.py` — LoRA fine-tuning script for MOSS-TTS on Norwegian data.
