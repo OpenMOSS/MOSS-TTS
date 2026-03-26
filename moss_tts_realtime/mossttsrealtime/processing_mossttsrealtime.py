@@ -83,6 +83,7 @@ class MossTTSRealtimeProcessor(ProcessorMixin):
             "<|im_start|>context\n"
             "The assistant section should be synthesized using the following voice timbre:"
             f"{padded_audio_prompt}"
+            "<|im_end|>\n"
         )
         return voice_clone
 
