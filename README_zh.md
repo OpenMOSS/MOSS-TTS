@@ -74,8 +74,8 @@ MOSS‑TTS 家族是由 [MOSI.AI](https://mosi.cn/#hero) 与 [OpenMOSS 团队](h
   - [介绍](#audio-tokenizer-intro)
   - [模型权重](#model-weights)
   - [重建质量客观评测](#重建质量客观评测)
-- [更多信息](#更多信息)
-  - [社区项目](#社区项目)
+- [更多信息](#more-information-zh)
+  - [社区项目](#community-projects-zh)
 - [引用](#引用)
 
 
@@ -636,7 +636,12 @@ $T_{\text{LLM-first-sentence}} + T_{\text{MOSS-TTS-Realtime-TTFB}} = 197ms + 180
   <img src="./assets/evaluation_moss_audio_tokenizer.png" alt="LibriSpeech objective metrics for audio tokenizers" width="90%" />
 </p>
 
+<a id="more-information-zh"></a>
+
 ## 📚 更多信息
+
+<a id="community-projects-zh"></a>
+
 ### 🌟 社区项目
 MOSS-TTS 社区正在快速发展，我们也很高兴展示一些由社区成员构建的优秀项目与功能：
 - **[ComfyUI-MOSS-TTS](https://github.com/richservo/comfyui-moss-tts)**：面向 ComfyUI 的 MOSS-TTS 扩展。

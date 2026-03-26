@@ -622,7 +622,12 @@ We compare **MOSS Audio Tokenizer** with open-source audio tokenizers on the Lib
 </p>
 
 
+<a id="more-information"></a>
+
 ## 📚 More Information
+
+<a id="community-projects"></a>
+
 ###  🌟 Community Projects
 The MOSS-TTS community has been growing rapidly, and we’re delighted to showcase some outstanding projects and features built by community members:
 - **[ComfyUI-MOSS-TTS](https://github.com/richservo/comfyui-moss-tts)** A MOSS-TTS extension for ComfyUI.
