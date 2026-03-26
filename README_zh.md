@@ -74,6 +74,9 @@ MOSS‑TTS 家族是由 [MOSI.AI](https://mosi.cn/#hero) 与 [OpenMOSS 团队](h
   - [介绍](#audio-tokenizer-intro)
   - [模型权重](#model-weights)
   - [重建质量客观评测](#重建质量客观评测)
+- [更多信息](#更多信息)
+  - [社区项目](#社区项目)
+- [引用](#引用)
 
 
 <a id="introduction"></a>
@@ -639,6 +642,7 @@ MOSS-TTS 社区正在快速发展，我们也很高兴展示一些由社区成�
 - **[ComfyUI-MOSS-TTS](https://github.com/richservo/comfyui-moss-tts)**：面向 ComfyUI 的 MOSS-TTS 扩展。
 - **[MOSS-TTS-OpenAI](https://github.com/dasilva333/moss-tts-openai)**：兼容 OpenAI 接口的 MOSS-TTS API。
 - **[AnyPod](https://github.com/rulerman/AnyPod)**：以 MOSS-TTS/MOSS-TTSD 作为后端的播客生成工具。
+- **挪威语 LoRA for MOSS-TTS** — 一个基于 [NbAiLab/NST](https://huggingface.co/datasets/NbAiLab/NST) 挪威语语音数据集训练的社区 LoRA 适配器（`mlp`，r=16）。由 [Tosee](https://tosee.no/) 公司的 [Martin Bergo](https://x.com/martinbergo) 贡献。训练脚本见 [`community/norwegian-lora/`](community/norwegian-lora/)。
 
 ## 证书
 

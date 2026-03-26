@@ -72,6 +72,9 @@ MOSS‑TTS Family is an open‑source **speech and sound generation model family
   - [Introduction](#mat-intro)
   - [Model Weights](#model-weights)
   - [Objective Reconstruction Evaluation](#objective-reconstruction-evaluation)
+- [More Information](#more-information)
+  - [Community Projects](#community-projects)
+- [Citation](#citation)
 
 
 ## Introduction
@@ -625,6 +628,7 @@ The MOSS-TTS community has been growing rapidly, and we’re delighted to showca
 - **[ComfyUI-MOSS-TTS](https://github.com/richservo/comfyui-moss-tts)** A MOSS-TTS extension for ComfyUI.
 - **[MOSS-TTS-OpenAI](https://github.com/dasilva333/moss-tts-openai)** An OpenAI-compatible TTS API for MOSS-TTS.
 - **[AnyPod](https://github.com/rulerman/AnyPod)** A podcast generation tool using MOSS-TTS/MOSS-TTSD as the backend.
+- **Norwegian LoRA for MOSS-TTS** — A community-trained LoRA adapter (`mlp`, r=16) fine-tuned on the [NbAiLab/NST](https://huggingface.co/datasets/NbAiLab/NST) Norwegian speech dataset. Contributed by [Martin Bergo](https://x.com/martinbergo) at [Tosee](https://tosee.no/). Training scripts are available in [`community/norwegian-lora/`](community/norwegian-lora/).
 
 
 ## LICENSE
