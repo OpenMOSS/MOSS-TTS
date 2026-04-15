@@ -159,7 +159,16 @@ conda create -n moss-tts python=3.12 -y
 conda activate moss-tts
 ```
 
-Install all required dependencies:
+Install the FFmpeg system dependency (required by `torchcodec` for audio I/O):
+
+```bash
+# Debian/Ubuntu
+sudo apt-get install -y ffmpeg
+# macOS
+brew install ffmpeg
+```
+
+Install all required Python dependencies:
 
 ```bash
 git clone https://github.com/OpenMOSS/MOSS-TTS.git
