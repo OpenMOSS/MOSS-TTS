@@ -15,22 +15,23 @@ Unlike the "Delay-Pattern" architecture which shifts codebooks across time steps
 ### Key Components
 *   **Global Transformer (Temporal Backbone):** Responsible for long-range dependencies, linguistic context, and global style/prosody modeling.
 *   **Local Transformer (Depth Transformer):** A lightweight module that models the coarse-to-fine dependencies between RVQ codebook layers within a single time step.
-*   **Cat (Causal Audio Tokenizer):** The underlying discrete interface that provides high-fidelity audio compression and reconstruction at 24kHz.
+*   **Cat (Causal Audio Tokenizer):** The underlying discrete interface that provides high-fidelity audio compression and reconstruction. The original checkpoint uses **MOSS-Audio-Tokenizer** (24 kHz mono); **MOSS-TTS-Local-Transformer-v1.5** upgrades to **MOSS-Audio-Tokenizer-v2** (48 kHz stereo).
 
 ---
 
 ## 2. Technical Specifications
 
 
-| Feature | Specification |
-| :--- | :--- |
-| **Backbone Model** | Initialized from **Qwen3-1.7B** |
-| **Depth Transformer** | 4 Transformer blocks (Hidden: 1536, FFN: 8960) |
-| **Audio Tokenizer** | **Cat** (Causal Audio Tokenizer) |
-| **Sampling Rate** | 24,000 Hz |
-| **Frame Rate** | 12.5 Hz (1s ≈ 12.5 tokens/blocks) |
-| **Codebooks** | 32 RVQ layers (10-bit each) |
-| **Generation Mode** | Purely Autoregressive (AR) |
+| Feature | MOSS-TTS-Local-Transformer | MOSS-TTS-Local-Transformer-v1.5 |
+| :--- | :--- | :--- |
+| **Backbone Model** | Initialized from **Qwen3-1.7B** | Initialized from **Qwen3-4B** |
+| **Depth Transformer** | 4 Transformer blocks (Hidden: 1536, FFN: 8960) | 1 Transformer block (Hidden: 2560, FFN: 9728) |
+| **Audio Tokenizer** | **MOSS-Audio-Tokenizer** (Cat v1) | **MOSS-Audio-Tokenizer-v2** (Cat v2) |
+| **Sampling Rate** | 24,000 Hz | 48,000 Hz |
+| **Channels** | Mono | Stereo |
+| **Frame Rate** | 12.5 Hz (1s ≈ 12.5 tokens/blocks) | 12.5 Hz (1s ≈ 12.5 tokens/blocks) |
+| **Codebooks** | 32 RVQ layers (10-bit each) | 12 RVQ layers (10-bit each) |
+| **Generation Mode** | Purely Autoregressive (AR) | Purely Autoregressive (AR) |
 
 ---
 
@@ -105,6 +106,8 @@ According to the `moss_tts_model_card.md`, the **MossTTSLocal-1.7B** achieves st
 
 The usage snippets below show direct generation (with/without cloning) and continuation for MossTTSLocal. Run them as-is to try the model end to end.
 
+> Tip: **MOSS-TTS-Local-Transformer-v1.5** is the recommended checkpoint. It uses MOSS-Audio-Tokenizer-v2 for 48 kHz stereo output. Replace the model path below with `"OpenMOSS-Team/MOSS-TTS-Local-Transformer-v1.5"` to use it. The generation API is identical.
+
 ### 7.1 Direct Generation & Voice Cloning
 
 ```python
@@ -120,7 +123,7 @@ torch.backends.cuda.enable_flash_sdp(True)
 torch.backends.cuda.enable_mem_efficient_sdp(True)
 torch.backends.cuda.enable_math_sdp(True)
 
-pretrained_model_name_or_path = "OpenMOSS-Team/MOSS-TTS-Local-Transformer"
+pretrained_model_name_or_path = "OpenMOSS-Team/MOSS-TTS-Local-Transformer-v1.5"
 device = "cuda" if torch.cuda.is_available() else "cpu"
 dtype = torch.bfloat16 if device == "cuda" else torch.float32
 
@@ -254,7 +257,7 @@ torch.backends.cuda.enable_flash_sdp(True)
 torch.backends.cuda.enable_mem_efficient_sdp(True)
 torch.backends.cuda.enable_math_sdp(True)
 
-pretrained_model_name_or_path = "OpenMOSS-Team/MOSS-TTS-Local-Transformer"
+pretrained_model_name_or_path = "OpenMOSS-Team/MOSS-TTS-Local-Transformer-v1.5"
 device = "cuda" if torch.cuda.is_available() else "cpu"
 dtype = torch.bfloat16 if device == "cuda" else torch.float32
 

@@ -68,13 +68,15 @@ For full details, see:
 |---|---|
 | **MossTTSDelay-8B v1.5** | **Recommended for production**. Latest MOSS-TTS checkpoint with stronger multilingual synthesis when language tags are provided, more stable voice cloning, and explicit pause control. |
 | **MossTTSDelay-8B 1.0** | Original 8B delay-pattern release with strong long-context stability and robust voice cloning quality. |
-| **MossTTSLocal-1.7B** | **Recommended for evaluation and research**. Smaller model size with SOTA objective metrics. Great for quick experiments, ablations, and academic studies. |
+| **MossTTSLocal-4B v1.5** | **Recommended for evaluation and research**. Upgraded backbone (Qwen3-4B), uses **MOSS-Audio-Tokenizer-v2** for **48 kHz stereo** output, with 12-codebook RVQ. |
+| **MossTTSLocal-1.7B** | Original 1.7B local-transformer release (Qwen3-1.7B backbone) with SOTA objective metrics and 24 kHz mono output via MOSS-Audio-Tokenizer (v1), 32-codebook RVQ. |
 
 **Recommended decoding hyperparameters (per model)**
 
 | Model | audio_temperature | audio_top_p | audio_top_k | audio_repetition_penalty |
 |---|---:|---:|---:|---:|
 | **MossTTSDelay-8B v1.5 / 1.0** | 1.7 | 0.8 | 25 | 1.0 |
+| **MossTTSLocal-4B v1.5** | 1.7 | 0.8 | 25 | 1.0 |
 | **MossTTSLocal-1.7B** | 1.0 | 0.95 | 50 | 1.1 |
 
 ### 1.5 Supported Languages
@@ -98,7 +100,7 @@ MOSS-TTS-v1.5 currently supports **31 languages**. It keeps the 20 languages sup
 
 ## 2. Quick Start
 
-> Tip: For production usage, prioritize **MossTTSDelay-8B v1.5**. The examples below use this model; **MossTTSLocal-1.7B** supports the same API, and a practical walkthrough is available in [moss_tts_local/README.md](../moss_tts_local/README.md).
+> Tip: For production usage, prioritize **MossTTSDelay-8B v1.5**. The examples below use this model; **MossTTSLocal** (both 4B v1.5 and 1.7B 1.0) supports the same API, and a practical walkthrough is available in [moss_tts_local/README.md](../moss_tts_local/README.md).
 
 > Tip: MOSS-TTS-v1.5 uses the same generation API as the 1.0 `MossTTSDelay-8B` checkpoint. For multilingual inputs, set `language` whenever the language is known.
 
