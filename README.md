@@ -290,9 +290,10 @@ Notes:
 - FlashAttention 2 is only available on supported GPUs and is typically used with `torch.float16` or `torch.bfloat16`.
 
 **Troubleshooting: `Could not load libtorchcodec` after installing `[torch-runtime]`.** If `torchaudio.save()` raises `RuntimeError: Could not load libtorchcodec` even though FFmpeg is installed correctly, the cause is usually not FFmpeg but a missing `LD_LIBRARY_PATH` entry plus an undeclared transitive dependency:
-1. Add the `torch`/`nvidia` pip packages' bundled CUDA shared libraries to `LD_LIBRARY_PATH`, e.g. (adjust for your venv path):
+1. Add the `torch`/`nvidia` pip packages' bundled CUDA shared libraries to `LD_LIBRARY_PATH`. The `nvidia-*-cu12` packages are namespace packages (no `__init__.py`, so `nvidia.__file__` is `None`) — locate them via `torch`'s own install directory instead:
    ```bash
-   export LD_LIBRARY_PATH="$(python -c 'import torch, os; print(os.path.dirname(torch.__file__))')/lib:$(python -c 'import nvidia, os; print(os.path.dirname(nvidia.__file__))')/*/lib:$LD_LIBRARY_PATH"
+   SITE_PACKAGES="$(python -c 'import torch, os; print(os.path.dirname(os.path.dirname(torch.__file__)))')"
+   export LD_LIBRARY_PATH="$SITE_PACKAGES/torch/lib:$(printf '%s:' "$SITE_PACKAGES"/nvidia/*/lib)$LD_LIBRARY_PATH"
    ```
 2. If it still fails looking for `libnppicc.so.12`, install the (currently undeclared) NVIDIA Performance Primitives package: `pip install nvidia-npp-cu12` (or `uv pip install nvidia-npp-cu12`).
 
