@@ -156,6 +156,8 @@ We train **MossTTSDelay** and **MossTTSLocal** as complementary baselines under 
 | **MOSS‑SoundEffect‑v2.0** | `MossSoundEffectPipeline` | 1.3B DiT | [![Model Card](https://img.shields.io/badge/Model%20Card-View-blue?logo=markdown)](moss_soundeffect_v2/README.md) | [![Hugging Face](https://img.shields.io/badge/Huggingface-Model-orange?logo=huggingface)](https://huggingface.co/OpenMOSS-Team/MOSS-SoundEffect-v2.0) | [![ModelScope](https://img.shields.io/badge/ModelScope-Model-7B61FF?logo=modelscope&logoColor=white)](https://modelscope.cn/models/openmoss/MOSS-SoundEffect-v2.0) |
 | **MOSS‑TTS‑Realtime** | `MossTTSRealtime` | 1.7B | [![Model Card](https://img.shields.io/badge/Model%20Card-View-blue?logo=markdown)](docs/moss_tts_realtime_model_card.md) | [![Hugging Face](https://img.shields.io/badge/Huggingface-Model-orange?logo=huggingface)](https://huggingface.co/OpenMOSS-Team/MOSS-TTS-Realtime) | [![ModelScope](https://img.shields.io/badge/ModelScope-Model-7B61FF?logo=modelscope&logoColor=white)](https://modelscope.cn/models/openmoss/MOSS-TTS-Realtime) |
 
+> **VRAM note (measured on an NVIDIA T4, 16 GB):** The flagship **MOSS-TTS-v1.5** / **MOSS-TTS 1.0** (`MossTTSDelay`, 8B) needs ≈15.5 GB of VRAM just to load the bf16 weights (`.to("cuda")`, no `device_map`), which leaves no headroom for activations/KV-cache on 16 GB GPUs and raises a CUDA OOM error during `from_pretrained`/`.to("cuda")`. If you're on a 16 GB (or smaller) GPU, use **MOSS-TTS-Local-Transformer-v1.5** (`MossTTSLocal`, 4B) instead — measured peak VRAM ≈13.4 GB, i.e. it fits with ~16.5% headroom — or the smaller **MOSS-TTS-Local-Transformer** (1.7B). Passing `quantization_config=BitsAndBytesConfig(load_in_8bit=True)` to `from_pretrained` does **not** help here: it loads without error but gives no measurable VRAM reduction on either the 4B or 8B checkpoint, so it is not a viable way to fit the 8B model on a smaller GPU.
+
 ## Supported Languages
 
 MOSS-TTS-v1.5 and MOSS-TTS-Local-Transformer-v1.5 currently support **31 languages**. They keep the 20 languages supported by [MOSS-TTS 1.0](https://huggingface.co/OpenMOSS-Team/MOSS-TTS) and extend multilingual continued training to Cantonese, Dutch, Finnish, Hindi, Macedonian, Malay, Romanian, Swahili, Tagalog, Thai, and Vietnamese.
@@ -287,6 +289,12 @@ Notes:
 - If FlashAttention 2 fails to build on your machine, you can skip it and use the default attention backend.
 - FlashAttention 2 is only available on supported GPUs and is typically used with `torch.float16` or `torch.bfloat16`.
 
+**Troubleshooting: `Could not load libtorchcodec` after installing `[torch-runtime]`.** If `torchaudio.save()` raises `RuntimeError: Could not load libtorchcodec` even though FFmpeg is installed correctly, the cause is usually not FFmpeg but a missing `LD_LIBRARY_PATH` entry plus an undeclared transitive dependency:
+1. Add the `torch`/`nvidia` pip packages' bundled CUDA shared libraries to `LD_LIBRARY_PATH`, e.g. (adjust for your venv path):
+   ```bash
+   export LD_LIBRARY_PATH="$(python -c 'import torch, os; print(os.path.dirname(torch.__file__))')/lib:$(python -c 'import nvidia, os; print(os.path.dirname(nvidia.__file__))')/*/lib:$LD_LIBRARY_PATH"
+   ```
+2. If it still fails looking for `libnppicc.so.12`, install the (currently undeclared) NVIDIA Performance Primitives package: `pip install nvidia-npp-cu12` (or `uv pip install nvidia-npp-cu12`).
 
 <a id="moss-tts-basic-usage"></a>
 ### MOSS‑TTS Basic Usage
@@ -328,6 +336,10 @@ torch.backends.cuda.enable_math_sdp(True)
 pretrained_model_name_or_path = "OpenMOSS-Team/MOSS-TTS-v1.5"
 device = "cuda" if torch.cuda.is_available() else "cpu"
 dtype = torch.bfloat16 if device == "cuda" else torch.float32
+# Hardware note: this default is fine on Ampere+ GPUs (A100/H100, compute capability >= 8).
+# On Turing GPUs (e.g. NVIDIA T4, compute capability 7.5), prefer torch.float16 instead --
+# bf16 inputs are rejected by PyTorch's SDPA EFFICIENT_ATTENTION kernel on that architecture
+# ("RuntimeError: No available kernel"), silently forcing a fallback to the slower MATH backend.
 
 def resolve_attn_implementation() -> str:
     # Prefer FlashAttention 2 when package + device conditions are met.
