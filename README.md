@@ -750,4 +750,4 @@ Models in MOSS-TTS Family are licensed under the Apache License 2.0.
 
 ## Star History
 
-[![Star History Chart](https://api.star-history.com/svg?repos=OpenMOSS/MOSS-TTS&type=date&legend=top-left)](https://www.star-history.com/#OpenMOSS/MOSS-TTS&type=date&legend=top-left)
+[![Star History Chart](https://star-history.dera.page/svg?repos=OpenMOSS/MOSS-TTS&type=date&legend=top-left)](https://star-history.dera.page/#OpenMOSS/MOSS-TTS&type=date&legend=top-left)
