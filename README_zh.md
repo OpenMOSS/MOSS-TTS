@@ -760,4 +760,4 @@ MOSS-TTS 家族中的模型使用 Apache License 2.0 许可证。
 
 ## 星标历史数据
 
-[![Star History Chart](https://api.star-history.com/svg?repos=OpenMOSS/MOSS-TTS&type=date&legend=top-left)](https://www.star-history.com/#OpenMOSS/MOSS-TTS&type=date&legend=top-left)
+[![Star History Chart](https://star-history.dera.page/svg?repos=OpenMOSS/MOSS-TTS&type=date&legend=top-left)](https://star-history.dera.page/#OpenMOSS/MOSS-TTS&type=date&legend=top-left)
