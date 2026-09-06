@@ -190,6 +190,19 @@ python3 example_llm_stream_to_tts.py \
 
 Key: provide a streaming text_deltas source that yields incremental text chunks (e.g., vLLM streaming output, or delta text from OpenAI ChatCompletions).
 
+To use a real LLM stream from [OrcaRouter](https://www.orcarouter.ai) instead of a simulated one, run `example_orcarouter_stream_to_tts.py` with your OrcaRouter API key:
+
+```bash
+export ORCAROUTER_API_KEY=your_key
+python3 example_orcarouter_stream_to_tts.py \
+    --model_path OpenMOSS-Team/MOSS-TTS-Realtime \
+    --codec_path OpenMOSS-Team/MOSS-Audio-Tokenizer \
+    --prompt_wav ./audio/prompt_audio1.mp3 \
+    --llm_model deepseek/deepseek-chat
+```
+
+This example streams incremental text deltas from OrcaRouter's OpenAI-compatible chat completions endpoint and feeds them into the same streaming TTS pipeline. The LLM model is configurable via `--llm_model` (e.g. `orcarouter/auto` for adaptive routing).
+
 ```python
 with codec.streaming(batch_size=1):
   for delta in text_deltas:
