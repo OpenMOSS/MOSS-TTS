@@ -27,6 +27,8 @@ for 48 kHz stereo audio encoding and decoding.
 | **Codebooks** | 12 RVQ layers (10-bit each) |
 | **Generation Mode** | Purely Autoregressive (AR) |
 
+> **VRAM note (measured on an NVIDIA T4, 16 GB):** this checkpoint fits comfortably on a 16 GB GPU — measured peak VRAM ≈13.4 GB (≈16.5% headroom), vs. the flagship 8B `MOSS-TTS-v1.5`/`MOSS-TTS 1.0` checkpoint, which OOMs on 16 GB GPUs just loading the bf16 weights (≈15.5 GB). This makes `MOSS-TTS-Local-Transformer-v1.5` the recommended checkpoint for 16 GB-class GPUs such as the T4.
+
 ## Batch Inference
 
 ```python
@@ -48,6 +50,10 @@ torch.backends.cuda.enable_math_sdp(True)
 pretrained_model_name_or_path = "OpenMOSS-Team/MOSS-TTS-Local-Transformer-v1.5"
 device = "cuda" if torch.cuda.is_available() else "cpu"
 dtype = torch.bfloat16 if device == "cuda" else torch.float32
+# Hardware note: this default is fine on Ampere+ GPUs (A100/H100, compute capability >= 8).
+# On Turing GPUs (e.g. NVIDIA T4, compute capability 7.5), prefer torch.float16 instead --
+# bf16 inputs are rejected by PyTorch's SDPA EFFICIENT_ATTENTION kernel on that architecture
+# ("RuntimeError: No available kernel"), silently forcing a fallback to the slower MATH backend.
 
 
 def resolve_attn_implementation() -> str:
