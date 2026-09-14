@@ -732,6 +732,7 @@ The MOSS-TTS community has been growing rapidly, and we’re delighted to showca
 - **[MOSS-TTS-OpenAI](https://github.com/dasilva333/moss-tts-openai)** An OpenAI-compatible TTS API for MOSS-TTS.
 - **[AnyPod](https://github.com/rulerman/AnyPod)** A podcast generation tool using MOSS-TTS/MOSS-TTSD as the backend.
 - **Norwegian LoRA for MOSS-TTS** — A community-trained LoRA adapter (`mlp`, r=16) fine-tuned on the [NbAiLab/NST](https://huggingface.co/datasets/NbAiLab/NST) Norwegian speech dataset. Contributed by [Martin Bergo](https://x.com/martinbergo) at [Tosee](https://tosee.no/). LoRA weights: [ToSee-Norway/MOSS-TTS-Norwegian-LoRA](https://huggingface.co/ToSee-Norway/MOSS-TTS-Norwegian-LoRA). Training scripts are available in [`community/norwegian-lora/`](community/norwegian-lora/).
+- **[tts-audiobook-tool](https://github.com/zeropointnine/tts-audiobook-tool)** — Audiobook creation tool focused on high quality output, supporting several TTS models including MOSS-TTS Delay and Local (running locally or served via SGL-Omni)
 
 
 ## LICENSE
