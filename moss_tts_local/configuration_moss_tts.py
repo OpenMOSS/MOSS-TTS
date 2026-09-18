@@ -111,7 +111,7 @@ class MossTTSDelayConfig(PretrainedConfig):
         self.local_hidden_size = local_hidden_size
         self.local_num_layers = local_num_layers
         
-        super().__init__(**kwargs)
+        super().__init__(pad_token_id=self.pad_token_id, **kwargs)
 
     def to_dict(self):
         output = super().to_dict()

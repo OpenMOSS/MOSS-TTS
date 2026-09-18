@@ -19,16 +19,10 @@ from transformers import (
     PreTrainedTokenizerBase,
     ProcessorMixin,
     logging,
-    processing_utils,
 )
 
 from .configuration_moss_tts import MossTTSLocalConfig
 
-
-if hasattr(processing_utils, "MODALITY_TO_BASE_CLASS_MAPPING"):
-    processing_utils.MODALITY_TO_BASE_CLASS_MAPPING["audio_tokenizer"] = "PreTrainedModel"
-else:
-    processing_utils.AUTO_TO_BASE_CLASS_MAPPING["AutoModel"] = "PreTrainedModel"
 logger = logging.get_logger(__name__)
 
 AUDIO_PLACEHOLDER = "<|audio|>"
@@ -178,6 +172,7 @@ class AssistantMessage(Message):
 
 
 class MossTTSLocalProcessor(ProcessorMixin):
+    # Required constructor attributes; the codec is managed locally.
     attributes = ["tokenizer"]
     tokenizer_class = "AutoTokenizer"
     audio_tokenizer_class = "AutoModel"
@@ -192,7 +187,7 @@ class MossTTSLocalProcessor(ProcessorMixin):
         model_config: Optional[MossTTSLocalConfig] = None,
         **kwargs,
     ) -> None:
-        super().__init__(tokenizer=tokenizer, audio_tokenizer=audio_tokenizer, **kwargs)
+        super().__init__(tokenizer=tokenizer, **kwargs)
         self.tokenizer = tokenizer
         self.audio_tokenizer = audio_tokenizer
         self.model_config = model_config or MossTTSLocalConfig()
