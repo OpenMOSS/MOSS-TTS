@@ -20,10 +20,6 @@ from pathlib import Path
 import re
 import torchaudio
 
-from transformers import processing_utils
-
-processing_utils.MODALITY_TO_BASE_CLASS_MAPPING["audio_tokenizer"] = "PreTrainedModel"
-
 import torch
 from transformers import (
     PreTrainedTokenizerBase,
@@ -147,6 +143,7 @@ USER_MESSAGE_FIELDS = (
 
 
 class MossTTSDelayProcessor(ProcessorMixin):
+    attributes = ["tokenizer"]
     tokenizer_class = "AutoTokenizer"
     audio_tokenizer_class = "AutoModel"
 
@@ -160,9 +157,9 @@ class MossTTSDelayProcessor(ProcessorMixin):
         model_config: Optional[MossTTSDelayConfig] = None,
         **kwargs,
     ):
-        super().__init__(tokenizer=tokenizer, audio_tokenizer=audio_tokenizer, **kwargs)
+        super().__init__(tokenizer=tokenizer, **kwargs)
 
-        # Explicit assignments for type-checkers; ProcessorMixin sets these too.
+        # Keep the codec local instead of routing it through ProcessorMixin.
         self.tokenizer = tokenizer
         self.audio_tokenizer = audio_tokenizer
         if model_config is None:

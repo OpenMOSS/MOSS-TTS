@@ -103,7 +103,7 @@ class MossTTSDelayConfig(PretrainedConfig):
         self.im_end_token_id = im_end_token_id
 
         
-        super().__init__(**kwargs)
+        super().__init__(pad_token_id=self.pad_token_id, **kwargs)
 
     def to_dict(self):
         output = super().to_dict()
