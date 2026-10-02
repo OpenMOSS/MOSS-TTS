@@ -669,6 +669,8 @@ class MossTTSRealtimeStreamingSession:
                 whitespace_idx = self._text_cache.rfind(" ")
                 if whitespace_idx != -1:
                     cut_idx = whitespace_idx + 1
+                else:
+                    cut_idx = self.text_buffer_size
             if cut_idx is None:
                 break
             segments.append(self._text_cache[:cut_idx])
