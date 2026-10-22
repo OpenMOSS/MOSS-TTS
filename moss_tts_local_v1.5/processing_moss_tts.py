@@ -309,6 +309,9 @@ class MossTTSLocalProcessor(ProcessorMixin):
     def from_pretrained(cls, pretrained_model_name_or_path, *args, **kwargs):
         trust_remote_code = kwargs.pop("trust_remote_code", True)
         kwargs.pop("_from_auto", None)
+        kwargs.pop("revision", None)
+        kwargs.pop("subfolder", None)
+        kwargs.pop("token", None)
         codec_path = kwargs.pop("codec_path", None)
         codec_weight_dtype = kwargs.pop("codec_weight_dtype", "fp32")
         codec_compute_dtype = kwargs.pop("codec_compute_dtype", None)
