@@ -732,6 +732,7 @@ The MOSS-TTS community has been growing rapidly, and we’re delighted to showca
 - **[MOSS-TTS-OpenAI](https://github.com/dasilva333/moss-tts-openai)** An OpenAI-compatible TTS API for MOSS-TTS.
 - **[AnyPod](https://github.com/rulerman/AnyPod)** A podcast generation tool using MOSS-TTS/MOSS-TTSD as the backend.
 - **Norwegian LoRA for MOSS-TTS** — A community-trained LoRA adapter (`mlp`, r=16) fine-tuned on the [NbAiLab/NST](https://huggingface.co/datasets/NbAiLab/NST) Norwegian speech dataset. Contributed by [Martin Bergo](https://x.com/martinbergo) at [Tosee](https://tosee.no/). LoRA weights: [ToSee-Norway/MOSS-TTS-Norwegian-LoRA](https://huggingface.co/ToSee-Norway/MOSS-TTS-Norwegian-LoRA). Training scripts are available in [`community/norwegian-lora/`](community/norwegian-lora/).
+- **[CNAPS Studio](https://cnaps.ai/models/Txt2Sound-MOSS-SoundEffect2)** — Run MOSS-SoundEffect-v2.0 in the browser with no setup, and chain it with image and video models in a no-code workflow. Ready-to-use workflow: [Add Sound to Your Video](https://cnaps.ai/recipes/shorts-sound-effects) — upload a video, describe the background sound, and it adds the ambience plus two short accent effects, mixed over the original audio.
 
 
 ## LICENSE

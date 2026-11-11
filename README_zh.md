@@ -744,6 +744,7 @@ MOSS-TTS 社区正在快速发展，我们也很高兴展示一些由社区成�
 - **[MOSS-TTS-OpenAI](https://github.com/dasilva333/moss-tts-openai)**：兼容 OpenAI 接口的 MOSS-TTS API。
 - **[AnyPod](https://github.com/rulerman/AnyPod)**：以 MOSS-TTS/MOSS-TTSD 作为后端的播客生成工具。
 - **挪威语 LoRA for MOSS-TTS** — 一个基于 [NbAiLab/NST](https://huggingface.co/datasets/NbAiLab/NST) 挪威语语音数据集训练的社区 LoRA 适配器（`mlp`，r=16）。由 [Tosee](https://tosee.no/) 公司的 [Martin Bergo](https://x.com/martinbergo) 贡献。LoRA 权重：[ToSee-Norway/MOSS-TTS-Norwegian-LoRA](https://huggingface.co/ToSee-Norway/MOSS-TTS-Norwegian-LoRA)。训练脚本见 [`community/norwegian-lora/`](community/norwegian-lora/)。
+- **[CNAPS Studio](https://cnaps.ai/models/Txt2Sound-MOSS-SoundEffect2)**：无需安装，即可在浏览器中运行 MOSS-SoundEffect-v2.0，并在无代码工作流中与图像、视频模型串联使用。现成工作流：[Add Sound to Your Video](https://cnaps.ai/recipes/shorts-sound-effects)，上传视频并描述想要的背景声音，即可生成环境音和两段简短的点缀音效，并混合到原视频音轨上。
 
 ## 证书
 
