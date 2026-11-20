@@ -297,8 +297,10 @@ def main() -> None:
     sft.unwrap_training_model = unwrap_peft_model
     sft.save_checkpoint = save_lora_checkpoint
     sft.AdamW = build_optimizer
-    if bnb is not None:
-        # Also intercept the user's local sft.py variant that directly uses AdamW8bit.
+    # Also intercept a local sft.py variant that imports bitsandbytes and uses AdamW8bit directly.
+    # The stock sft.py uses torch AdamW and has no `bnb` attribute, so only patch when it exists.
+    patch_sft_bnb = bnb is not None and hasattr(sft, "bnb")
+    if patch_sft_bnb:
         sft.bnb.optim.AdamW8bit = build_optimizer
 
     try:
@@ -310,7 +312,7 @@ def main() -> None:
         sft.unwrap_training_model = original_unwrap
         sft.save_checkpoint = original_save
         sft.AdamW = original_torch_adamw
-        if bnb is not None:
+        if patch_sft_bnb:
             sft.bnb.optim.AdamW8bit = bnb_adamw8bit
 
 
