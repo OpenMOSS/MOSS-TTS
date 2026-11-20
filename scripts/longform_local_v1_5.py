@@ -6,8 +6,10 @@ Modes (--mode):
   continuation  Control group. Prefix = codes(k-1) only; text = text(k-1) + text(k).
   clone         Control group. Every chunk is an independent voice clone (no prefix).
 
-The first chunk uses --first-mode: "clone" (Reference = ref audio) or
-"continuation" (prefix = ref codes, text = ref_text + text(1)).
+The first chunk is a voice clone when --reference-audio is given, otherwise plain TTS
+with no reference (for a single-speaker LoRA, whose voice is in the weights).
+Modes b and clone need --reference-audio; continuation works with or without it.
+--lora-dir loads a PEFT adapter trained by moss_tts_local_v1.5/finetuning/sft_lora.py.
 
 Low-VRAM layout (fits 8 GB cards):
   1. Codec on GPU only to encode the reference, then back to CPU.
@@ -89,10 +91,10 @@ def plan_chunks(text: str, max_chars: int) -> list[str]:
     return [chunk for chunk in chunks if chunk.strip()]
 
 
-def chunk_strategy(index: int, mode: str, first_mode: str) -> str:
-    """Return how chunk `index` (0-based) is generated: clone, ref_continuation, b, continuation."""
+def chunk_strategy(index: int, mode: str, has_reference: bool) -> str:
+    """Return how chunk `index` (0-based) is generated: clone, direct, b, continuation."""
     if index == 0:
-        return "clone" if first_mode == "clone" else "ref_continuation"
+        return "clone" if has_reference else "direct"
     if mode == "clone":
         return "clone"
     return mode
@@ -100,10 +102,8 @@ def chunk_strategy(index: int, mode: str, first_mode: str) -> str:
 
 def prompt_text(strategy: str, ref_text: str, prev_text: str, text: str) -> str:
     """Prefix transcript + new text, joined exactly as the official examples do."""
-    if strategy == "clone":
+    if strategy in {"clone", "direct"}:
         return text
-    if strategy == "ref_continuation":
-        return ref_text + text
     if strategy == "b":
         return ref_text + prev_text + text
     if strategy == "continuation":
@@ -139,12 +139,14 @@ def positive_int(value: str) -> int:
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--input-txt", type=Path, required=True)
-    parser.add_argument("--reference-audio", type=Path, required=True)
+    parser.add_argument("--reference-audio", type=Path, default=None,
+                        help="Voice reference; omit to synthesize with the model/LoRA voice only")
     parser.add_argument("--reference-text", default=None, help="Exact transcript of the reference audio")
     parser.add_argument("--reference-text-file", type=Path, default=None)
     parser.add_argument("--output-dir", type=Path, required=True)
     parser.add_argument("--mode", choices=["b", "continuation", "clone"], default="b")
-    parser.add_argument("--first-mode", choices=["clone", "continuation"], default="clone")
+    parser.add_argument("--lora-dir", default=None,
+                        help="PEFT LoRA adapter directory (e.g. output/.../checkpoint-last); needs `pip install peft`")
     parser.add_argument("--chunk-chars", type=positive_int, default=80,
                         help="Max characters of NEW text per chunk (default 80)")
     parser.add_argument("--gap-ms", type=int, default=300,
@@ -174,7 +176,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--sv-model", default="microsoft/wavlm-base-plus-sv")
     parser.add_argument("--dry-run", action="store_true", help="Only write the chunk plan")
     args = parser.parse_args()
-    if not args.reference_audio.is_file():
+    if args.reference_audio is None:
+        if args.mode in {"b", "clone"}:
+            parser.error(f"--mode {args.mode} needs --reference-audio")
+        if args.speaker_sim:
+            parser.error("--speaker-sim needs --reference-audio to compare against")
+    elif not args.reference_audio.is_file():
         parser.error(f"Reference audio not found: {args.reference_audio}")
     if args.reference_text and args.reference_text_file:
         parser.error("Use either --reference-text or --reference-text-file")
@@ -205,6 +212,12 @@ def load_tts_model(args, torch, dtype, attn):
         kwargs["device_map"] = "auto"
         kwargs["max_memory"] = {device.index or 0: args.gpu_memory, "cpu": args.cpu_memory}
     model = AutoModel.from_pretrained(args.model_dir, **kwargs)
+    if args.lora_dir:
+        from peft import PeftModel
+        model = PeftModel.from_pretrained(model, args.lora_dir, is_trainable=False)
+        if args.quant == "none":
+            model = model.merge_and_unload()  # same default as the official app
+        print(f"[INFO] LoRA loaded from {args.lora_dir} (merged={args.quant == 'none'})", flush=True)
     if "device_map" not in kwargs:
         model.to(device)
     model.eval()
@@ -227,8 +240,9 @@ def main() -> None:
     chunks = plan_chunks(text, args.chunk_chars)
     if not chunks:
         raise SystemExit("Input TXT contains no non-blank text")
-    strategies = [chunk_strategy(i, args.mode, args.first_mode) for i in range(len(chunks))]
-    needs_ref_text = any(s in {"b", "ref_continuation"} for s in strategies)
+    has_reference = args.reference_audio is not None
+    strategies = [chunk_strategy(i, args.mode, has_reference) for i in range(len(chunks))]
+    needs_ref_text = args.mode == "b"
 
     out = args.output_dir
     out.mkdir(parents=True, exist_ok=True)
@@ -240,7 +254,7 @@ def main() -> None:
         (out / "manifest.json").write_text(json.dumps(manifest, ensure_ascii=False, indent=2), encoding="utf-8")
 
     save_manifest()
-    print(f"Planned {len(chunks)} chunks (mode={args.mode}, first={args.first_mode}) in {out}", flush=True)
+    print(f"Planned {len(chunks)} chunks (mode={args.mode}, reference={'yes' if has_reference else 'no'}) in {out}", flush=True)
     if args.dry_run:
         return
 
@@ -288,16 +302,22 @@ def main() -> None:
     sr = int(getattr(codec, "sampling_rate", processor.model_config.sampling_rate))
     frame_rate = sr / float(getattr(codec, "downsample_rate", 3840))
 
-    with torch.inference_mode():
-        codec.to(device)
-        ref_codes = processor.encode_audios_from_path(str(args.reference_audio.resolve()), n_vq=n_vq)[0]
-        gap_samples = round(sr * args.gap_ms / 1000)
-        gap_codes = (processor.encode_audios_from_wav(torch.zeros(2, gap_samples), sr, n_vq=n_vq)[0]
-                     if gap_samples >= sr / frame_rate else ref_codes[:0])
-        codec.to("cpu")
+    ref_codes = None
+    gap_codes = torch.zeros((0, n_vq), dtype=torch.long)
+    if has_reference:
+        with torch.inference_mode():
+            codec.to(device)
+            ref_codes = processor.encode_audios_from_path(str(args.reference_audio.resolve()), n_vq=n_vq)[0]
+            gap_samples = round(sr * args.gap_ms / 1000)
+            if args.mode == "b" and gap_samples >= sr / frame_rate:
+                gap_codes = processor.encode_audios_from_wav(torch.zeros(2, gap_samples), sr, n_vq=n_vq)[0]
+            codec.to("cpu")
+    elif not args.lora_dir:
+        print("[WARN] No --reference-audio and no --lora-dir: the base model will pick an arbitrary voice", flush=True)
     if device.type == "cuda":
         torch.cuda.empty_cache()
-    manifest.update(reference_frames=int(ref_codes.shape[0]), gap_frames=int(gap_codes.shape[0]))
+    manifest.update(reference_frames=0 if ref_codes is None else int(ref_codes.shape[0]),
+                    gap_frames=int(gap_codes.shape[0]))
     save_manifest()
 
     # ---- Stage 2: TTS model generates codes for every chunk ----
@@ -311,13 +331,13 @@ def main() -> None:
             started = time.monotonic()
             # The processor encodes text verbatim; official scripts strip it, so never start with a space.
             full_text = prompt_text(strategy, ref_text, prev_text, chunk).strip()
-            if strategy == "clone":
-                conversation = [processor.build_user_message(text=full_text, reference=[ref_codes], language=language)]
+            if strategy in {"clone", "direct"}:
+                reference = [ref_codes] if strategy == "clone" else None
+                conversation = [processor.build_user_message(text=full_text, reference=reference, language=language)]
                 proc_mode = "generation"
             else:
-                prefix = {"ref_continuation": ref_codes,
-                          "b": torch.cat([ref_codes, gap_codes, prev_codes], dim=0),
-                          "continuation": prev_codes}[strategy]
+                prefix = (torch.cat([ref_codes, gap_codes, prev_codes], dim=0)
+                          if strategy == "b" else prev_codes)
                 conversation = [processor.build_user_message(text=full_text, language=language),
                                 processor.build_assistant_message(audio_codes_list=[prefix])]
                 proc_mode = "continuation"
