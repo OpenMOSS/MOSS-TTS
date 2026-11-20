@@ -69,6 +69,45 @@ def split_sentences(text: str) -> list[str]:
     return [piece for piece in pieces if piece]
 
 
+SENTENCE_FINAL = re.compile(r"[.!?。！？…][\"'”’)\]」』）]*$")
+CLAUSE_FINAL = re.compile(r"[,;:\u2014\uff0c\u3001\uff1b\uff1a][\"'\u201d\u2019)\]\u300d\u300f\uff09]*$")
+CJK_TAIL = re.compile(r"[　-鿿＀-￯]$")
+
+
+def add_pause_markers(text: str, sentence_pause: float, paragraph_pause: float, is_last: bool,
+                      clause_pause: float = 0.0) -> str:
+    """Insert v1.5 `[pause X.Ys]` markers after sentence-final punctuation.
+
+    A sentence followed by a newline gets `paragraph_pause`, otherwise `sentence_pause`.
+    The final sentence of the whole text (is_last) gets none. A chunk that ends on a
+    comma / semicolon / colon / dash (an over-long sentence split mid-way) gets
+    `clause_pause` at its end only; commas inside a chunk are left to the model.
+    """
+    pieces = split_sentences(text)
+    out = []
+    for index, piece in enumerate(pieces):
+        body = piece.rstrip()
+        trailing = piece[len(body):]
+        rest = "".join(pieces[index + 1:])
+        chunk_end = not rest.strip()
+        if not body or (is_last and chunk_end):
+            out.append(piece)
+            continue
+        if SENTENCE_FINAL.search(body):
+            paragraph = "\n" in trailing or rest.lstrip(" \t").startswith("\n")
+            pause = paragraph_pause if paragraph else sentence_pause
+        elif chunk_end and CLAUSE_FINAL.search(body):
+            pause = clause_pause
+        else:
+            pause = 0.0
+        if pause <= 0:
+            out.append(piece)
+            continue
+        sep = "" if CJK_TAIL.search(body) else " "
+        out.append(f"{body}{sep}[pause {pause:.1f}s]{trailing}")
+    return "".join(out)
+
+
 def plan_chunks(text: str, max_chars: int) -> list[str]:
     """Pack whole sentences up to max_chars; only an over-long sentence falls back to
     comma / word-boundary splitting, so chunks never end mid-sentence otherwise."""
@@ -168,6 +207,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--audio-top-p", type=float, default=0.8)
     parser.add_argument("--audio-top-k", type=int, default=25)
     parser.add_argument("--seed", type=int, default=42, help="Chunk k uses seed + k")
+    parser.add_argument("--sentence-pause", type=float, default=0.0,
+                        help="Insert [pause Xs] after each sentence (seconds; 0 = off)")
+    parser.add_argument("--paragraph-pause", type=float, default=0.0,
+                        help="Pause after a sentence that ends a paragraph (seconds; 0 = off)")
+    parser.add_argument("--clause-pause", type=float, default=0.0,
+                        help="Pause when a chunk ends on a comma/semicolon/colon/dash (seconds; 0 = off)")
     parser.add_argument("--asr-check", action="store_true", help="Transcribe each chunk and report CER (faster-whisper)")
     parser.add_argument("--asr-model", default="large-v3-turbo")
     parser.add_argument("--asr-device", default="cpu")
@@ -189,6 +234,8 @@ def parse_args() -> argparse.Namespace:
         parser.error("Output directory is not empty; choose a new --output-dir")
     if args.gap_ms < 0:
         parser.error("--gap-ms must be >= 0")
+    if min(args.sentence_pause, args.paragraph_pause, args.clause_pause) < 0:
+        parser.error("--sentence-pause / --paragraph-pause / --clause-pause must be >= 0")
     return args
 
 
@@ -243,12 +290,15 @@ def main() -> None:
     has_reference = args.reference_audio is not None
     strategies = [chunk_strategy(i, args.mode, has_reference) for i in range(len(chunks))]
     needs_ref_text = args.mode == "b"
+    # Text actually sent to the model (with pause markers); CER is still scored on the plain text.
+    model_texts = [add_pause_markers(c, args.sentence_pause, args.paragraph_pause, i == len(chunks) - 1,
+                                     args.clause_pause) for i, c in enumerate(chunks)]
 
     out = args.output_dir
     out.mkdir(parents=True, exist_ok=True)
     manifest = {"options": {k: str(v) if isinstance(v, Path) else v for k, v in vars(args).items()},
-                "chunks": [{"index": i + 1, "strategy": s, "text": c, "status": "pending"}
-                           for i, (c, s) in enumerate(zip(chunks, strategies))]}
+                "chunks": [{"index": i + 1, "strategy": s, "text": c, "model_text": m, "status": "pending"}
+                           for i, (c, s, m) in enumerate(zip(chunks, strategies, model_texts))]}
 
     def save_manifest():
         (out / "manifest.json").write_text(json.dumps(manifest, ensure_ascii=False, indent=2), encoding="utf-8")
@@ -330,7 +380,7 @@ def main() -> None:
             print(f"[{i + 1}/{len(chunks)}] {strategy}: {chunk.strip()[:40]}", flush=True)
             started = time.monotonic()
             # The processor encodes text verbatim; official scripts strip it, so never start with a space.
-            full_text = prompt_text(strategy, ref_text, prev_text, chunk).strip()
+            full_text = prompt_text(strategy, ref_text, prev_text, model_texts[i]).strip()
             if strategy in {"clone", "direct"}:
                 reference = [ref_codes] if strategy == "clone" else None
                 conversation = [processor.build_user_message(text=full_text, reference=reference, language=language)]
@@ -367,7 +417,7 @@ def main() -> None:
                   + ("  [WARN] hit --max-new-tokens, chunk may be cut" if truncated else ""), flush=True)
             save_manifest()
             all_codes.append(codes)
-            prev_codes, prev_text = codes, chunk
+            prev_codes, prev_text = codes, model_texts[i]
 
     # ---- Stage 3: release TTS model, decode on GPU, metrics on CPU ----
     del model, batch, ids, new_rows
