@@ -44,8 +44,49 @@ def ensure_terminal_punctuation(text: str) -> str:
     return text + ("。" if re.search(r"[一-鿿]", text) else ".")
 
 
+SENTENCE_BOUNDARY = re.compile(
+    r"[.!?]+[\"'\u201d\u2019)\]]*(?=\s)"  # English end + closing quotes, before whitespace
+    r"|[\u3002\uff01\uff1f\u2026]+[\u201d\u2019\u300d\u300f\uff09]*"  # CJK end + closing quotes
+    r"|\n+"
+)
+
+ABBREVIATIONS = {"mr.", "mrs.", "ms.", "dr.", "prof.", "st.", "jr.", "sr.", "vs.", "etc.",
+                 "e.g.", "i.e.", "no.", "mt.", "ft.", "inc.", "ltd.", "co.", "u.s.", "a.m.", "p.m."}
+
+def split_sentences(text: str) -> list[str]:
+    """Split after sentence-final punctuation or newlines, keeping every character."""
+    pieces, start = [], 0
+    for match in SENTENCE_BOUNDARY.finditer(text):
+        last_token = text[:match.end()].split()[-1] if text[:match.end()].split() else ""
+        if last_token.lower() in ABBREVIATIONS or re.fullmatch(r"[A-Z]\.", last_token):
+            continue  # "Mr. Smith", "J. K. Rowling": not a sentence end
+        pieces.append(text[start:match.end()])
+        start = match.end()
+    if start < len(text):
+        pieces.append(text[start:])
+    return [piece for piece in pieces if piece]
+
+
 def plan_chunks(text: str, max_chars: int) -> list[str]:
-    return [chunk for chunk in iter_text_chunks(text, max_chars) if chunk.strip()]
+    """Pack whole sentences up to max_chars; only an over-long sentence falls back to
+    comma / word-boundary splitting, so chunks never end mid-sentence otherwise."""
+    if max_chars < 1:
+        raise ValueError("max_chars must be positive")
+    chunks, current = [], ""
+    for sentence in split_sentences(text):
+        if len(sentence) > max_chars:
+            if current.strip():
+                chunks.append(current)
+            current = ""
+            chunks.extend(iter_text_chunks(sentence, max_chars))
+            continue
+        if len(current) + len(sentence) > max_chars and current.strip():
+            chunks.append(current)
+            current = ""
+        current += sentence
+    if current.strip():
+        chunks.append(current)
+    return [chunk for chunk in chunks if chunk.strip()]
 
 
 def chunk_strategy(index: int, mode: str, first_mode: str) -> str:
@@ -268,7 +309,8 @@ def main() -> None:
             entry = manifest["chunks"][i]
             print(f"[{i + 1}/{len(chunks)}] {strategy}: {chunk.strip()[:40]}", flush=True)
             started = time.monotonic()
-            full_text = prompt_text(strategy, ref_text, prev_text, chunk)
+            # The processor encodes text verbatim; official scripts strip it, so never start with a space.
+            full_text = prompt_text(strategy, ref_text, prev_text, chunk).strip()
             if strategy == "clone":
                 conversation = [processor.build_user_message(text=full_text, reference=[ref_codes], language=language)]
                 proc_mode = "generation"
