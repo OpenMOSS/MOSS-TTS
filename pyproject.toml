@@ -29,7 +29,12 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-app-asr = ["faster-whisper>=1.1.0"]
+longform = [
+    "transformers==5.0.0",
+    "accelerate>=1.10.1",
+    "faster-whisper>=1.1.0",
+    "bitsandbytes>=0.45.0"
+]
 finetune-lora = [
     "accelerate>=1.10.1",
     "peft>=0.18.0",
