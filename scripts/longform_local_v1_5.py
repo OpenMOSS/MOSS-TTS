@@ -11,11 +11,16 @@ with no reference (for a single-speaker LoRA, whose voice is in the weights).
 Modes b and clone need --reference-audio; continuation works with or without it.
 --lora-dir loads a PEFT adapter trained by moss_tts_local_v1.5/finetuning/sft_lora.py.
 
+Chunk size: --chunk-seconds (default 20) packs whole sentences by weighted characters
+(OmniVoice's per-script weights), starting from a default speaking rate and recalibrating
+from the measured rate after every chunk.
+
 Low-VRAM layout (fits 8 GB cards):
   1. Codec on GPU only to encode the reference, then back to CPU.
   2. TTS model generates every chunk as codec codes (codec stays on CPU).
-     --gpu-memory caps the GPU share; the remaining layers are CPU-offloaded
-     by accelerate. --quant int8/nf4 (bitsandbytes) is the faster alternative.
+     The GPU share is free VRAM at load time minus a reserve for generation; layers
+     that do not fit are CPU-offloaded by accelerate. --quant int8/nf4 (bitsandbytes)
+     is the faster alternative on small cards.
   3. The TTS model is released, then the codec decodes each chunk and the
      concatenated codes (combined.wav) on GPU. ASR / speaker metrics run on CPU.
 """
@@ -23,6 +28,7 @@ Low-VRAM layout (fits 8 GB cards):
 from __future__ import annotations
 
 import argparse
+from collections import deque
 import gc
 import json
 from pathlib import Path
@@ -108,26 +114,82 @@ def add_pause_markers(text: str, sentence_pause: float, paragraph_pause: float, 
     return "".join(out)
 
 
-def plan_chunks(text: str, max_chars: int) -> list[str]:
-    """Pack whole sentences up to max_chars; only an over-long sentence falls back to
-    comma / word-boundary splitting, so chunks never end mid-sentence otherwise."""
-    if max_chars < 1:
+# Character weights from OmniVoice's RuleDurationEstimator (k2-fsa/OmniVoice, utils/duration.py):
+# roughly "how long a character takes to say", so one seconds budget works across languages.
+_SCRIPT_WEIGHTS = (
+    ((0x4E00, 0x9FFF), 3.0), ((0x3400, 0x4DBF), 3.0), ((0xF900, 0xFAFF), 3.0),  # CJK ideographs
+    ((0x3040, 0x30FF), 2.2), ((0x31F0, 0x31FF), 2.2),                          # kana
+    ((0xAC00, 0xD7AF), 2.5), ((0x1100, 0x11FF), 2.5), ((0x3130, 0x318F), 2.5),  # hangul
+    ((0x0900, 0x0DFF), 1.8), ((0x1000, 0x109F), 1.8), ((0x1780, 0x17FF), 1.8),  # indic, myanmar, khmer
+    ((0x0E00, 0x0EFF), 1.5), ((0x0600, 0x06FF), 1.5), ((0x0590, 0x05FF), 1.5),  # thai/lao, arabic, hebrew
+    ((0x1200, 0x139F), 3.0), ((0xA000, 0xA4CF), 3.0),                          # ethiopic, yi
+)
+# OmniVoice's no-reference fallback: "Nice to meet you." (14.1 weight) spoken in 25 frames at 25 Hz.
+DEFAULT_WEIGHT_PER_SECOND = 14.1
+
+
+def char_weight(ch: str) -> float:
+    if ch.isascii() and ch.isalpha():
+        return 1.0
+    if ch == " ":
+        return 0.2
+    category = unicodedata.category(ch)
+    if category[0] == "M":
+        return 0.0
+    if category[0] in "PS":
+        return 0.5
+    if category[0] == "Z" or ch.isspace():
+        return 0.2
+    if category[0] == "N":
+        return 3.5
+    code = ord(ch)
+    for (low, high), weight in _SCRIPT_WEIGHTS:
+        if low <= code <= high:
+            return weight
+    return 1.0  # latin extended, cyrillic, greek, ... and anything else
+
+
+def text_weight(text: str) -> float:
+    return sum(char_weight(ch) for ch in text)
+
+
+def next_chunk(queue, budget: float, measure=text_weight) -> str:
+    """Pop whole sentences from `queue` (a deque of split_sentences pieces) while
+    measure(chunk) <= budget. Only a sentence that alone exceeds the budget is split
+    (comma / word boundary); its remainder goes back to the front of the queue.
+    Whitespace-only pieces (newlines) that follow are attached to the chunk."""
+    current = ""
+    while queue:
+        sentence = queue[0]
+        if not current.strip() and sentence.strip() and measure(sentence) > budget:
+            queue.popleft()
+            per_char = measure(sentence) / max(len(sentence), 1)
+            max_chars = max(1, int(budget / per_char)) if per_char > 0 else len(sentence)
+            pieces = list(iter_text_chunks(sentence, max_chars))
+            current += pieces[0]
+            rest = "".join(pieces[1:])
+            if rest:
+                queue.appendleft(rest)
+            break
+        if current.strip() and measure(current + sentence) > budget:
+            break
+        current += queue.popleft()
+    while queue and not queue[0].strip():
+        current += queue.popleft()
+    return current
+
+
+def plan_chunks(text: str, max_chars: float, measure=text_weight) -> list[str]:
+    """Pack whole sentences up to a budget (weighted characters by default; pass measure=len for plain characters);
+    chunks never end mid-sentence unless a single sentence is over budget."""
+    if max_chars <= 0:
         raise ValueError("max_chars must be positive")
-    chunks, current = [], ""
-    for sentence in split_sentences(text):
-        if len(sentence) > max_chars:
-            if current.strip():
-                chunks.append(current)
-            current = ""
-            chunks.extend(iter_text_chunks(sentence, max_chars))
-            continue
-        if len(current) + len(sentence) > max_chars and current.strip():
-            chunks.append(current)
-            current = ""
-        current += sentence
-    if current.strip():
-        chunks.append(current)
-    return [chunk for chunk in chunks if chunk.strip()]
+    queue, chunks = deque(split_sentences(text)), []
+    while queue:
+        chunk = next_chunk(queue, max_chars, measure)
+        if chunk.strip():
+            chunks.append(chunk)
+    return chunks
 
 
 def chunk_strategy(index: int, mode: str, has_reference: bool) -> str:
@@ -186,8 +248,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--mode", choices=["b", "continuation", "clone"], default="b")
     parser.add_argument("--lora-dir", default=None,
                         help="PEFT LoRA adapter directory (e.g. output/.../checkpoint-last); needs `pip install peft`")
-    parser.add_argument("--chunk-chars", type=positive_int, default=80,
-                        help="Max characters of NEW text per chunk (default 80)")
+    parser.add_argument("--chunk-seconds", type=float, default=20.0,
+                        help="Target seconds of NEW audio per chunk (default 20). Chunk size is estimated from weighted characters and recalibrated from the measured speaking rate after every chunk")
     parser.add_argument("--gap-ms", type=int, default=300,
                         help="Silence between ref codes and previous-chunk codes in the B prefix")
     parser.add_argument("--model-dir", default="OpenMOSS-Team/MOSS-TTS-Local-Transformer-v1.5")
@@ -199,9 +261,6 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--attn-implementation", choices=["auto", "sdpa", "eager", "flash_attention_2"], default="sdpa")
     parser.add_argument("--quant", choices=["none", "int8", "nf4"], default="none",
                         help="bitsandbytes quantization of the TTS backbone (needs `pip install bitsandbytes`)")
-    parser.add_argument("--gpu-memory", default="6GiB",
-                        help="GPU budget for TTS weights when --quant none; the rest is CPU-offloaded")
-    parser.add_argument("--cpu-memory", default="48GiB")
     parser.add_argument("--max-new-tokens", type=positive_int, default=1500, help="Frame budget per chunk (12.5/s)")
     parser.add_argument("--audio-temperature", type=float, default=1.7)
     parser.add_argument("--audio-top-p", type=float, default=0.8)
@@ -234,6 +293,8 @@ def parse_args() -> argparse.Namespace:
         parser.error("Output directory is not empty; choose a new --output-dir")
     if args.gap_ms < 0:
         parser.error("--gap-ms must be >= 0")
+    if args.chunk_seconds <= 0:
+        parser.error("--chunk-seconds must be > 0")
     if min(args.sentence_pause, args.paragraph_pause, args.clause_pause) < 0:
         parser.error("--sentence-pause / --paragraph-pause / --clause-pause must be >= 0")
     return args
@@ -257,7 +318,15 @@ def load_tts_model(args, torch, dtype, attn):
     elif device.type == "cuda":
         # accelerate keeps as many decoder layers as fit on the GPU and streams the rest from CPU.
         kwargs["device_map"] = "auto"
-        kwargs["max_memory"] = {device.index or 0: args.gpu_memory, "cpu": args.cpu_memory}
+        free, total = torch.cuda.mem_get_info(device)
+        # Keep room for activations / KV cache during generation (small: < 1k frames per chunk).
+        reserve = max(1.5 * 2**30, 0.08 * total)
+        gpu_budget = max(int(free - reserve), 2**30)
+        print(f"[INFO] GPU: {free / 2**30:.1f} GiB free of {total / 2**30:.1f} GiB, "
+              f"budget for TTS weights {gpu_budget / 2**30:.1f} GiB", flush=True)
+        import psutil  # accelerate needs a CPU entry, otherwise layers that do not fit go to disk
+        cpu_budget = int(psutil.virtual_memory().available * 0.9)
+        kwargs["max_memory"] = {device.index or 0: gpu_budget, "cpu": cpu_budget}
     model = AutoModel.from_pretrained(args.model_dir, **kwargs)
     if args.lora_dir:
         from peft import PeftModel
@@ -284,29 +353,38 @@ def main() -> None:
         text = args.input_txt.read_text(encoding=args.encoding)
     except (OSError, UnicodeError, LookupError) as exc:
         raise SystemExit(str(exc))
-    chunks = plan_chunks(text, args.chunk_chars)
-    if not chunks:
+    if not text.strip():
         raise SystemExit("Input TXT contains no non-blank text")
     has_reference = args.reference_audio is not None
-    strategies = [chunk_strategy(i, args.mode, has_reference) for i in range(len(chunks))]
     needs_ref_text = args.mode == "b"
-    # Text actually sent to the model (with pause markers); CER is still scored on the plain text.
-    model_texts = [add_pause_markers(c, args.sentence_pause, args.paragraph_pause, i == len(chunks) - 1,
-                                     args.clause_pause) for i, c in enumerate(chunks)]
+
+    def mark(chunk: str, is_last: bool) -> str:
+        # Text actually sent to the model (with pause markers); CER is still scored on the plain text.
+        return add_pause_markers(chunk, args.sentence_pause, args.paragraph_pause, is_last, args.clause_pause)
 
     out = args.output_dir
     out.mkdir(parents=True, exist_ok=True)
     manifest = {"options": {k: str(v) if isinstance(v, Path) else v for k, v in vars(args).items()},
-                "chunks": [{"index": i + 1, "strategy": s, "text": c, "model_text": m, "status": "pending"}
-                           for i, (c, s, m) in enumerate(zip(chunks, strategies, model_texts))]}
+                "chunks": []}
 
     def save_manifest():
         (out / "manifest.json").write_text(json.dumps(manifest, ensure_ascii=False, indent=2), encoding="utf-8")
 
-    save_manifest()
-    print(f"Planned {len(chunks)} chunks (mode={args.mode}, reference={'yes' if has_reference else 'no'}) in {out}", flush=True)
+    print(f"Chunking: {args.chunk_seconds:g}s per chunk (weighted chars, recalibrated per chunk); mode={args.mode}, reference={'yes' if has_reference else 'no'}; output {out}", flush=True)
     if args.dry_run:
+        # Preview only: the real plan adapts to the measured speaking rate during generation.
+        preview = plan_chunks(text, args.chunk_seconds * DEFAULT_WEIGHT_PER_SECOND)
+        for i, chunk in enumerate(preview):
+            entry = {"index": i + 1, "strategy": chunk_strategy(i, args.mode, has_reference), "text": chunk,
+                     "model_text": mark(chunk, i == len(preview) - 1), "status": "planned",
+                     "chars": len(chunk), "weight": round(text_weight(chunk), 1),
+                     "estimated_seconds": round(text_weight(chunk) / DEFAULT_WEIGHT_PER_SECOND, 1)}
+            manifest["chunks"].append(entry)
+        save_manifest()
+        print(f"Dry run: {len(preview)} chunks planned at the default speaking rate "
+              "(actual chunks adapt during generation)", flush=True)
         return
+    save_manifest()
 
     import torch
     import torchaudio
@@ -374,13 +452,29 @@ def main() -> None:
     model = load_tts_model(args, torch, dtype, attn)
     audio_pad = int(model.config.audio_pad_token_id)
     all_codes, prev_codes, prev_text = [], None, ""
+    chunks: list[str] = []
+    queue = deque(split_sentences(text))
+    rate_weight = rate_seconds = 0.0  # measured speaking rate, in weighted chars per second
     with torch.inference_mode():
-        for i, (chunk, strategy) in enumerate(zip(chunks, strategies)):
-            entry = manifest["chunks"][i]
-            print(f"[{i + 1}/{len(chunks)}] {strategy}: {chunk.strip()[:40]}", flush=True)
+        while queue:
+            rate = rate_weight / rate_seconds if rate_seconds > 0 else DEFAULT_WEIGHT_PER_SECOND
+            budget = args.chunk_seconds * rate
+            chunk = next_chunk(queue, budget)
+            if not chunk.strip():
+                continue
+            i = len(chunks)
+            chunks.append(chunk)
+            strategy = chunk_strategy(i, args.mode, has_reference)
+            model_text = mark(chunk, not any(piece.strip() for piece in queue))
+            entry = {"index": i + 1, "strategy": strategy, "text": chunk, "model_text": model_text,
+                     "status": "pending", "chars": len(chunk), "weight": round(text_weight(chunk), 1),
+                     "budget": round(budget, 1), "rate_used": round(rate, 2)}
+            manifest["chunks"].append(entry)
+            print(f"[{i + 1}] {strategy}: {len(chunk)} chars, rate={rate:.2f} w/s, budget={budget:.0f} w"
+                  f" | {chunk.strip()[:40]}", flush=True)
             started = time.monotonic()
             # The processor encodes text verbatim; official scripts strip it, so never start with a space.
-            full_text = prompt_text(strategy, ref_text, prev_text, model_texts[i]).strip()
+            full_text = prompt_text(strategy, ref_text, prev_text, model_text).strip()
             if strategy in {"clone", "direct"}:
                 reference = [ref_codes] if strategy == "clone" else None
                 conversation = [processor.build_user_message(text=full_text, reference=reference, language=language)]
@@ -415,9 +509,12 @@ def main() -> None:
                          gen_seconds=round(time.monotonic() - started, 2))
             print(f"  {entry['seconds']}s audio in {entry['gen_seconds']}s, frames/char={entry['frames_per_char']}"
                   + ("  [WARN] hit --max-new-tokens, chunk may be cut" if truncated else ""), flush=True)
+            if not truncated:  # a cut-off chunk would understate the speaking rate
+                rate_weight += text_weight(chunk)
+                rate_seconds += codes.shape[0] / frame_rate
             save_manifest()
             all_codes.append(codes)
-            prev_codes, prev_text = codes, model_texts[i]
+            prev_codes, prev_text = codes, model_text
 
     # ---- Stage 3: release TTS model, decode on GPU, metrics on CPU ----
     del model, batch, ids, new_rows
