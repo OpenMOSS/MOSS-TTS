@@ -880,7 +880,7 @@ def create_app(
         streaming_generation_enabled = bool(_safe_int(streaming_generation, default=0, minimum=0, maximum=1))
         request = StreamingRequest(
             text=text,
-            mode="continuation" if not prompt_audio_path or mode in {"continuation", "continuation_clone"} else "voice_clone",
+            mode=mode if prompt_audio_path else "continuation",
             prompt_text=prompt_text or "",
             prompt_audio_path=prompt_audio_path or None,
             prompt_audio_filename=prompt_audio.filename if uploaded_prompt_path is not None else None,

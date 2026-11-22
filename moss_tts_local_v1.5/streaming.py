@@ -368,14 +368,43 @@ def _sample_next_token_topk_subspace(
     )
 
 
+_USER_MESSAGE_KEYS = ("text", "reference", "instruction", "tokens", "quality", "sound_event", "ambient_sound", "language")
+
+
+def build_continuation_clone_batch(
+    processor: Any,
+    user_message: dict[str, Any],
+    prompt_audio_codes: torch.Tensor,
+    n_vq: Optional[int] = None,
+) -> dict[str, torch.Tensor]:
+    """Continuation + Clone: a continuation prompt whose user turn also carries the prompt audio in Reference(s).
+
+    The processor's own continuation path always renders Reference(s) as "None", and the
+    processor is loaded from the model repo (trust_remote_code), so the sequence is assembled
+    here: the voice-clone prompt (user turn with the reference, ending at the assistant
+    <audio_start>) followed by the prompt audio as assistant audio rows -- exactly what
+    continuation mode builds, plus the reference. start_length and decode() behave as in
+    plain continuation (the prefix is trimmed from the decoded audio).
+    """
+    fields = {key: user_message.get(key) for key in _USER_MESSAGE_KEYS}
+    fields["reference"] = [prompt_audio_codes]
+    message = processor.build_user_message(**fields)
+    clone = processor([message], mode="generation", n_vq=n_vq)["input_ids"][0]
+    prefix = processor._build_audio_rows(
+        prompt_audio_codes.to(device=clone.device, dtype=torch.long),
+        int(processor.model_config.audio_assistant_slot_token_id),
+    )
+    return dict(processor._pad([torch.cat([clone, prefix], dim=0)]))
+
+
 def build_processor_inputs(
     runtime: StreamingRuntime,
     request: StreamingRequest,
 ) -> tuple[dict[str, torch.Tensor], Optional[torch.Tensor], str]:
     processor = runtime.processor
     mode = str(request.mode or "continuation").strip().lower()
-    if mode not in {"continuation", "voice_clone"}:
-        raise ValueError("mode must be continuation or voice_clone.")
+    if mode not in {"continuation", "voice_clone", "continuation_clone"}:
+        raise ValueError("mode must be continuation, voice_clone or continuation_clone.")
 
     prompt_audio_path = (request.prompt_audio_path or "").strip() or None
     prompt_text = request.prompt_text or ""
@@ -404,16 +433,20 @@ def build_processor_inputs(
     elif prompt_audio_path:
         prompt_audio_codes = processor.encode_audios_from_path(prompt_audio_path, n_vq=runtime.n_vq)[0]
         continuation_text = prompt_text + request.text if prompt_text.strip() else request.text
+        user_message = processor.build_user_message(
+            text=continuation_text,
+            instruction=prompt_fields.get("instruction"),
+            tokens=prompt_fields.get("tokens"),
+            quality=prompt_fields.get("quality"),
+            sound_event=prompt_fields.get("sound_event"),
+            ambient_sound=prompt_fields.get("ambient_sound"),
+            language=prompt_fields.get("language"),
+        )
+        if mode == "continuation_clone":
+            batch = build_continuation_clone_batch(processor, user_message, prompt_audio_codes, n_vq=runtime.n_vq)
+            return _move_batch_to_device(batch, runtime.tts_device), prompt_audio_codes, "continuation"
         conversation = [
-            processor.build_user_message(
-                text=continuation_text,
-                instruction=prompt_fields.get("instruction"),
-                tokens=prompt_fields.get("tokens"),
-                quality=prompt_fields.get("quality"),
-                sound_event=prompt_fields.get("sound_event"),
-                ambient_sound=prompt_fields.get("ambient_sound"),
-                language=prompt_fields.get("language"),
-            ),
+            user_message,
             processor.build_assistant_message(audio_codes_list=[prompt_audio_codes]),
         ]
         processor_mode = "continuation"
@@ -1100,7 +1133,7 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument("--codec-dir", default=str(DEFAULT_CODEC_DIR))
     parser.add_argument("--output-dir", default=str(DEFAULT_OUTPUT_DIR))
     parser.add_argument("--text", default="这是一个流式推理测试。")
-    parser.add_argument("--mode", default="continuation", choices=["continuation", "voice_clone"])
+    parser.add_argument("--mode", default="continuation", choices=["continuation", "voice_clone", "continuation_clone"])
     parser.add_argument("--prompt-text", default="")
     parser.add_argument("--prompt-audio-path", default="")
     parser.add_argument("--language", default="Chinese")
