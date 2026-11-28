@@ -9,7 +9,7 @@ description = "MOSS-SoundEffect v2: text-to-audio diffusion pipeline (DiT + DAC 
 readme = "README.md"
 requires-python = ">=3.12"
 license = { text = "Apache-2.0" }
-authors = [{ name = "OpenMOSS Team" }]
+authors = [{ name = "OpenMOSS" }]
 keywords = ["text-to-audio", "diffusion", "sound-effects", "audio-generation"]
 classifiers = [
     "Development Status :: 4 - Beta",

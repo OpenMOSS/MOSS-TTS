@@ -22,14 +22,13 @@
 
 
 <div align="center">
+  <a href="https://www.moss.cn/models/moss-tts"><img src="https://img.shields.io/badge/%E6%A8%A1%E6%80%9D%E6%99%BA%E8%83%BD-Website-blue?logo=internet-explorer" alt="模思智能 Website"></a>
+  <a href="https://platform.moss.cn/docs/scenarios/single-voice"><img src="https://img.shields.io/badge/MOSS%20API-Docs-00A3FF?logo=fastapi" alt="MOSS API Docs"></a>
   <a href="https://clawhub.ai/luogao2333/moss-tts-voice"><img src="https://img.shields.io/badge/🦞_OpenClaw-Skills-8A2BE2" alt="OpenClaw"></a>
   <a href="https://huggingface.co/collections/OpenMOSS-Team/moss-tts"><img src="https://img.shields.io/badge/Huggingface-Models-orange?logo=huggingface&amp"></a>
   <a href="https://www.modelscope.cn/collections/openmoss/MOSS-TTS"><img src="https://img.shields.io/badge/ModelScope-Model-7B61FF?logo=modelscope&logoColor=white"></a>
-  <a href="https://mosi.cn/#models"><img src="https://img.shields.io/badge/Blog-View-blue?logo=internet-explorer&amp"></a>
   <a href="https://arxiv.org/abs/2603.18090"><img src="https://img.shields.io/badge/Arxiv-2603.18090-red?logo=Arxiv&amp"></a>
 
-  <a href="https://studio.mosi.cn"><img src="https://img.shields.io/badge/AIStudio-Try-green?logo=internet-explorer&amp"></a>
-  <a href="https://studio.mosi.cn/docs/moss-tts"><img src="https://img.shields.io/badge/API-Docs-00A3FF?logo=fastapi&amp"></a>
   <a href="https://x.com/Open_MOSS"><img src="https://img.shields.io/badge/Twitter-Follow-black?logo=x&amp"></a>
   <a href="https://discord.gg/Ahu78PH4p"><img src="https://img.shields.io/badge/Discord-Join-5865F2?logo=discord&amp"></a>
   <a href="./assets/wechat.jpg"><img src="https://img.shields.io/badge/WeChat-Join-07C160?logo=wechat&amp;logoColor=white" alt="WeChat"></a>
@@ -40,7 +39,7 @@
 [English](README.md) | [简体中文](README_zh.md)
 
 
-MOSS‑TTS 家族是由 [MOSI.AI](https://mosi.cn/#hero) 与 [OpenMOSS 团队](https://www.open-moss.com/) 推出的开源 **语音与声音生成模型家族**。该系列面向 **高保真**、**高表现力** 与 **复杂真实场景** 设计，覆盖稳定长文本语音、多说话人对话、音色/角色设计、环境音效以及实时流式 TTS 等能力。
+MOSS‑TTS 家族是由[模思智能](https://www.moss.cn/)与 [OpenMOSS](https://openmoss.ai/) 推出的开源 **语音与声音生成模型家族**。该系列面向 **高保真**、**高表现力** 与 **复杂真实场景** 设计，覆盖稳定长文本语音、多说话人对话、音色/角色设计、环境音效以及实时流式 TTS 等能力。
 
 <a id="news"></a>
 **从这里开始：** [快速开始](#快速开始) · [模型下载](https://huggingface.co/collections/OpenMOSS-Team/moss-tts) · [试听](#演示) · [微调](#微调) · [推理部署](#加速推理后端)
@@ -79,7 +78,7 @@ MOSS‑TTS 家族是由 [MOSI.AI](https://mosi.cn/#hero) 与 [OpenMOSS 团队](h
 * 2026.3.10：⚡️ 大幅优化了 llama.cpp 推理管线的显存占用。现在 8B 模型可以运行在 8GB 显存的 GPU 上！
 * 2026.3.4：新增 **无 PyTorch 推理** 支持 — 通过 [llama.cpp](https://github.com/ggerganov/llama.cpp) + ONNX Runtime 实现端侧轻量部署。量化 GGUF 权重发布于 [`OpenMOSS-Team/MOSS-TTS-GGUF`](https://huggingface.co/OpenMOSS-Team/MOSS-TTS-GGUF)，ONNX 音频编解码器发布于 [`OpenMOSS-Team/MOSS-Audio-Tokenizer-ONNX`](https://huggingface.co/OpenMOSS-Team/MOSS-Audio-Tokenizer-ONNX)。详见 [llama.cpp 后端](#llamacpp-后端无-pytorch-推理)。
 * 2026.3.4：🎉 我们在 🦞 龙虾 的 [ClawHub](https://clawhub.ai) 平台上架了 MOSS-TTS skills：[feishu-voice-tts](https://clawhub.ai/helloeveryworlds/feishu-voice-tts) 与 [moss-tts-voice](https://clawhub.ai/luogao2333/moss-tts-voice)。
-* 2026.2.10：🎉🎉🎉 我们已发布 [MOSS-TTS Family](https://huggingface.co/collections/OpenMOSS-Team/moss-tts)。更多详情请查看我们的 [Blog](https://mosi.cn/#models)！我们的 Huggingface Space 在这里：[MOSS-TTS](https://huggingface.co/spaces/OpenMOSS-Team/MOSS-TTS), [MOSS-TTSD-v1.0](https://huggingface.co/spaces/OpenMOSS-Team/MOSS-TTSD-v1.0), [MOSS-VoiceGenerator](https://huggingface.co/spaces/OpenMOSS-Team/MOSS-VoiceGenerator).
+* 2026.2.10：🎉🎉🎉 我们已发布 [MOSS-TTS Family](https://huggingface.co/collections/OpenMOSS-Team/moss-tts)。更多详情请查看我们的[官网](https://www.moss.cn/models/moss-tts)！我们的 Huggingface Space 在这里：[MOSS-TTS](https://huggingface.co/spaces/OpenMOSS-Team/MOSS-TTS), [MOSS-TTSD-v1.0](https://huggingface.co/spaces/OpenMOSS-Team/MOSS-TTSD-v1.0), [MOSS-VoiceGenerator](https://huggingface.co/spaces/OpenMOSS-Team/MOSS-VoiceGenerator).
 
 </details>
 
@@ -235,7 +234,7 @@ MOSS-TTSD 和 MOSS-TTS-Realtime 的语言覆盖请以各自 model card 为准。
 
 ### OpenClaw API Skills
 
-我们在🦞 龙虾 的 [ClawHub](https://clawhub.ai) 平台上架了 MOSS-TTS skills。API Key 可在 [MOSI AI Studio](https://studio.mosi.cn) 获取。
+我们在🦞 龙虾 的 [ClawHub](https://clawhub.ai) 平台上架了 MOSS-TTS skills。API Key 可在 [MOSS API](https://platform.moss.cn/) 获取。
 
 | Skill | 说明 | 安装命令 |
 |---|---|---|
@@ -682,7 +681,7 @@ $T_{\text{LLM-first-sentence}} + T_{\text{MOSS-TTS-Realtime-TTFB}} = 197ms + 180
 如需了解更多环境配置、进阶用法和评测指标，请访问 [MOSS-TTS-Nano 仓库](https://github.com/OpenMOSS/MOSS-TTS-Nano)。
 
 <div align="center">
-  <img src="assets/arch_moss_tts_nano.png" alt="MOSS TTS Nano architecture" width="80%" />
+  <img src="assets/arch_moss_tts_nano.png" alt="MOSS-TTS-Nano architecture" width="80%" />
 </div>
 
 <p align="center">MOSS-TTS-Nano 架构图</p>
@@ -710,8 +709,8 @@ $T_{\text{LLM-first-sentence}} + T_{\text{MOSS-TTS-Realtime-TTFB}} = 197ms + 180
 如需了解更多配置、进阶用法与评测指标，请访问 [MOSS-Audio-Tokenizer 仓库](https://github.com/OpenMOSS/MOSS-Audio-Tokenizer)。
 
 <p align="center">
-  <img src="./assets/arch_moss_audio_tokenizer.png" alt="MOSS Audio Tokenizer 架构示意" width="100%" />
-  MOSS Audio Tokenizer 架构图
+  <img src="./assets/arch_moss_audio_tokenizer.png" alt="MOSS-Audio-Tokenizer 架构示意" width="100%" />
+  MOSS-Audio-Tokenizer 架构图
 </p>
 
 <a id="model-weights"></a>
@@ -725,7 +724,7 @@ $T_{\text{LLM-first-sentence}} + T_{\text{MOSS-TTS-Realtime-TTFB}} = 197ms + 180
 
 ### 重建质量客观评测
 
-我们在 LibriSpeech test-clean 子集上，对比 **MOSS Audio Tokenizer** 与多个开源音频 tokenizer 的 SIM、STOI、PESQ-NB、PESQ-WB 指标，并通过调节 RVQ 码本数量来控制码率。MOSS Audio Tokenizer 在 0–4 kbps 的比特率上的重建质量领先其他开源音频 tokenizer。
+我们在 LibriSpeech test-clean 子集上，对比 **MOSS-Audio-Tokenizer** 与多个开源音频 tokenizer 的 SIM、STOI、PESQ-NB、PESQ-WB 指标，并通过调节 RVQ 码本数量来控制码率。MOSS-Audio-Tokenizer 在 0–4 kbps 的比特率上的重建质量领先其他开源音频 tokenizer。
 
 <p align="center">
   <img src="./assets/evaluation_moss_audio_tokenizer.png" alt="LibriSpeech objective metrics for audio tokenizers" width="90%" />
@@ -739,7 +738,7 @@ $T_{\text{LLM-first-sentence}} + T_{\text{MOSS-TTS-Realtime-TTFB}} = 197ms + 180
 
 ### 🌟 社区项目
 MOSS-TTS 社区正在快速发展，我们也很高兴展示一些由社区成员构建的优秀项目与功能：
-- **[MOSS-TTS ComfyUI](https://github.com/CloudRipple/MOSS-TTS-ComfyUI)**：面向 ComfyUI 的 MOSS-TTS 系列节点包（Registry ID `moss-tts`），由 OpenMOSS 团队成员维护。支持零样本克隆、续写与时长控制。
+- **[MOSS-TTS ComfyUI](https://github.com/CloudRipple/MOSS-TTS-ComfyUI)**：面向 ComfyUI 的 MOSS-TTS 系列节点包（Registry ID `moss-tts`），由 OpenMOSS 成员维护。支持零样本克隆、续写与时长控制。
 - **[ComfyUI-MOSS-TTS](https://github.com/richservo/comfyui-moss-tts)**：面向 ComfyUI 的 MOSS-TTS 扩展。
 - **[MOSS-TTS-OpenAI](https://github.com/dasilva333/moss-tts-openai)**：兼容 OpenAI 接口的 MOSS-TTS API。
 - **[AnyPod](https://github.com/rulerman/AnyPod)**：以 MOSS-TTS/MOSS-TTSD 作为后端的播客生成工具。
