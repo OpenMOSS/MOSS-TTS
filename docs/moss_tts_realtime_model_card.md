@@ -7,7 +7,7 @@ By tightly integrating multi-turn context modeling with low-latency streaming sy
 
 ### 1.1 TTS Family Positioning
 
-**MOSS-TTS-Realtime** is a high-performance, real-time speech synthesis model within the broader MOSS TTS Family. It is designed for interactive voice agents that require low-latency, continuous speech generation across multi-turn conversations. Unlike conventional streaming TTS systems that synthesize each response in isolation, MOSS-TTS-Realtime natively models dialogue context by conditioning speech generation on both textual and acoustic information from previous turns. By tightly integrating multi-turn context awareness with incremental streaming synthesis, it produces natural, coherent, and voice-consistent audio responses, enabling fluid and human-like spoken interactions for real-time applications.
+**MOSS-TTS-Realtime** is a high-performance, real-time speech synthesis model within the broader MOSS-TTS Family. It is designed for interactive voice agents that require low-latency, continuous speech generation across multi-turn conversations. Unlike conventional streaming TTS systems that synthesize each response in isolation, MOSS-TTS-Realtime natively models dialogue context by conditioning speech generation on both textual and acoustic information from previous turns. By tightly integrating multi-turn context awareness with incremental streaming synthesis, it produces natural, coherent, and voice-consistent audio responses, enabling fluid and human-like spoken interactions for real-time applications.
 
 **Key Capabilities**
 * **Context-Aware & Expressive Speech Generation**: Generates expressive and coherent speech by modeling both textual and acoustic context across multiple dialogue turns.

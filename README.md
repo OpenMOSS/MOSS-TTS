@@ -20,14 +20,13 @@
 
 
 <div align="center">
+  <a href="https://www.moss-ai.com/models/moss-tts"><img src="https://img.shields.io/badge/MOSS%20AI-Website-blue?logo=internet-explorer" alt="MOSS AI Website"></a>
+  <a href="https://platform.moss.cn/en/docs/scenarios/single-voice"><img src="https://img.shields.io/badge/MOSS%20API-Docs-00A3FF?logo=fastapi" alt="MOSS API Docs"></a>
   <a href="https://clawhub.ai/luogao2333/moss-tts-voice"><img src="https://img.shields.io/badge/🦞_OpenClaw-Skills-8A2BE2" alt="OpenClaw"></a>
   <a href="https://huggingface.co/collections/OpenMOSS-Team/moss-tts"><img src="https://img.shields.io/badge/Huggingface-Models-orange?logo=huggingface&amp"></a>
   <a href="https://www.modelscope.cn/collections/openmoss/MOSS-TTS"><img src="https://img.shields.io/badge/ModelScope-Model-7B61FF?logo=modelscope&logoColor=white"></a>
-  <a href="https://mosi.cn/#models"><img src="https://img.shields.io/badge/Blog-View-blue?logo=internet-explorer&amp"></a>
   <a href="https://arxiv.org/abs/2603.18090"><img src="https://img.shields.io/badge/Arxiv-2603.18090-red?logo=Arxiv&amp"></a>
 
-  <a href="https://studio.mosi.cn"><img src="https://img.shields.io/badge/AIStudio-Try-green?logo=internet-explorer&amp"></a>
-  <a href="https://studio.mosi.cn/docs/moss-tts"><img src="https://img.shields.io/badge/API-Docs-00A3FF?logo=fastapi&amp"></a>
   <a href="https://x.com/Open_MOSS"><img src="https://img.shields.io/badge/Twitter-Follow-black?logo=x&amp"></a>
   <a href="https://discord.gg/Ahu78PH4p"><img src="https://img.shields.io/badge/Discord-Join-5865F2?logo=discord&amp"></a>
   <a href="./assets/wechat.jpg"><img src="https://img.shields.io/badge/WeChat-Join-07C160?logo=wechat&amp;logoColor=white" alt="WeChat"></a>
@@ -38,7 +37,7 @@
 [English](README.md) | [简体中文](README_zh.md)
 
 
-MOSS‑TTS Family is an open‑source **speech and sound generation model family** from [MOSI.AI](https://mosi.cn/#hero) and the [OpenMOSS team](https://www.open-moss.com/). It is designed for **high‑fidelity**, **high‑expressiveness**, and **complex real‑world scenarios**, covering stable long‑form speech, multi‑speaker dialogue, voice/character design, environmental sound effects, and real‑time streaming TTS.
+MOSS‑TTS Family is an open‑source **speech and sound generation model family** from [MOSS AI](https://www.moss-ai.com/) and [OpenMOSS](https://openmoss.ai/). It is designed for **high‑fidelity**, **high‑expressiveness**, and **complex real‑world scenarios**, covering stable long‑form speech, multi‑speaker dialogue, voice/character design, environmental sound effects, and real‑time streaming TTS.
 
 
 **Start here:** [Quickstart](#quickstart) · [Model weights](https://huggingface.co/collections/OpenMOSS-Team/moss-tts) · [Listen to samples](#demo) · [Fine-tuning](#fine-tuning) · [Serving backends](#accelerated-inference-backends)
@@ -77,7 +76,7 @@ MOSS‑TTS Family is an open‑source **speech and sound generation model family
 * 2026.3.10: ⚡️ Significantly optimized the VRAM usage of llama.cpp inference pipeline. Now 8B model fits onto 8GB GPUs!
 * 2026.3.4: 🚀 Added **PyTorch-free inference support** — enabling lightweight on-device deployment via **llama.cpp + ONNX Runtime**. Quantized **GGUF weights** are released at [OpenMOSS-Team/MOSS-TTS-GGUF](https://huggingface.co/OpenMOSS-Team/MOSS-TTS-GGUF), and the **ONNX audio tokenizer** is available at [OpenMOSS-Team/MOSS-Audio-Tokenizer-ONNX](https://huggingface.co/OpenMOSS-Team/MOSS-Audio-Tokenizer-ONNX). See the [llama.cpp backend](#llamacpp-backend-torch-free-inference) for details.
 * 2026.3.4: 🎉 We add MOSS-TTS skills in [ClawHub](https://clawhub.ai) of 🦞 OpenClaw: [feishu-voice-tts](https://clawhub.ai/helloeveryworlds/feishu-voice-tts) and [moss-tts-voice](https://clawhub.ai/luogao2333/moss-tts-voice).
-* 2026.2.10: 🎉🎉🎉 We have released [MOSS-TTS Family](https://huggingface.co/collections/OpenMOSS-Team/moss-tts). Check our [Blog](https://mosi.cn/#models) for more details! Our **Huggingface Space** is here: [MOSS-TTS](https://huggingface.co/spaces/OpenMOSS-Team/MOSS-TTS), [MOSS-TTSD-v1.0](https://huggingface.co/spaces/OpenMOSS-Team/MOSS-TTSD-v1.0), [MOSS-VoiceGenerator](https://huggingface.co/spaces/OpenMOSS-Team/MOSS-VoiceGenerator).
+* 2026.2.10: 🎉🎉🎉 We have released [MOSS-TTS Family](https://huggingface.co/collections/OpenMOSS-Team/moss-tts). Check our [Website](https://www.moss-ai.com/models/moss-tts) for more details! Our **Huggingface Space** is here: [MOSS-TTS](https://huggingface.co/spaces/OpenMOSS-Team/MOSS-TTS), [MOSS-TTSD-v1.0](https://huggingface.co/spaces/OpenMOSS-Team/MOSS-TTSD-v1.0), [MOSS-VoiceGenerator](https://huggingface.co/spaces/OpenMOSS-Team/MOSS-VoiceGenerator).
 
 </details>
 
@@ -229,7 +228,7 @@ Compared with [MOSS-TTS-Local-Transformer-v1.0](https://huggingface.co/OpenMOSS-
 
 ### OpenClaw API Skills
 
-We add MOSS-TTS skills in [ClawHub](https://clawhub.ai) of 🦞 OpenClaw. You can get your API key from [MOSI AI Studio](https://studio.mosi.cn).
+We add MOSS-TTS skills in [ClawHub](https://clawhub.ai) of 🦞 OpenClaw. You can get your API key from [MOSS API](https://platform.moss.cn/).
 
 | Skill | Description | Install |
 |---|---|---|
@@ -670,7 +669,7 @@ Its main features include:
 To learn more about setup, advanced usage, and evaluation metrics, please visit the [MOSS-TTS-Nano repository](https://github.com/OpenMOSS/MOSS-TTS-Nano).
 
 <div align="center">
-  <img src="assets/arch_moss_tts_nano.png" alt="MOSS TTS Nano architecture" width="80%" />
+  <img src="assets/arch_moss_tts_nano.png" alt="MOSS-TTS-Nano architecture" width="80%" />
 </div>
 
 <p align="center">Architecture of MOSS-TTS-Nano</p>
@@ -697,8 +696,8 @@ To learn more about setup, advanced usage, and evaluation metrics, please visit 
 To learn more about setup, advanced usage, and evaluation metrics, please visit the [MOSS-Audio-Tokenizer Repository](https://github.com/OpenMOSS/MOSS-Audio-Tokenizer)
 
 <p align="center">
-  <img src="./assets/arch_moss_audio_tokenizer.png" alt="MOSS Audio Tokenizer architecture" width="100%" />
-  Architecture of MOSS Audio Tokenizer
+  <img src="./assets/arch_moss_audio_tokenizer.png" alt="MOSS-Audio-Tokenizer architecture" width="100%" />
+  Architecture of MOSS-Audio-Tokenizer
 </p>
 
 ### Model Weights
@@ -712,7 +711,7 @@ To learn more about setup, advanced usage, and evaluation metrics, please visit 
 
 ### Objective Reconstruction Evaluation
 
-We compare **MOSS Audio Tokenizer** with open-source audio tokenizers on the LibriSpeech test-clean subset using SIM, STOI, PESQ-NB, and PESQ-WB. Bitrate is controlled by varying the number of RVQ codebooks during decoding, and MOSS Audio Tokenizer leads reconstruction quality among open-source audio tokenizers at comparable 0–4 kbps bitrates.
+We compare **MOSS-Audio-Tokenizer** with open-source audio tokenizers on the LibriSpeech test-clean subset using SIM, STOI, PESQ-NB, and PESQ-WB. Bitrate is controlled by varying the number of RVQ codebooks during decoding, and MOSS-Audio-Tokenizer leads reconstruction quality among open-source audio tokenizers at comparable 0–4 kbps bitrates.
 
 <p align="center">
   <img src="./assets/evaluation_moss_audio_tokenizer.png" alt="LibriSpeech objective metrics for audio tokenizers" width="90%" />
@@ -727,7 +726,7 @@ We compare **MOSS Audio Tokenizer** with open-source audio tokenizers on the Lib
 
 ### 🌟 Community Projects
 The MOSS-TTS community has been growing rapidly, and we’re delighted to showcase some outstanding projects and features built by community members:
-- **[MOSS-TTS ComfyUI](https://github.com/CloudRipple/MOSS-TTS-ComfyUI)** — A ComfyUI node pack for the MOSS-TTS family (Registry id `moss-tts`), maintained by members of OpenMOSS team. Supports zero-shot voice cloning, continuation, and duration control.
+- **[MOSS-TTS ComfyUI](https://github.com/CloudRipple/MOSS-TTS-ComfyUI)** — A ComfyUI node pack for the MOSS-TTS family (Registry id `moss-tts`), maintained by members of OpenMOSS. Supports zero-shot voice cloning, continuation, and duration control.
 - **[ComfyUI-MOSS-TTS](https://github.com/richservo/comfyui-moss-tts)** A MOSS-TTS extension for ComfyUI.
 - **[MOSS-TTS-OpenAI](https://github.com/dasilva333/moss-tts-openai)** An OpenAI-compatible TTS API for MOSS-TTS.
 - **[AnyPod](https://github.com/rulerman/AnyPod)** A podcast generation tool using MOSS-TTS/MOSS-TTSD as the backend.
